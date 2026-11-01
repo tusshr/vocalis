@@ -19,7 +19,7 @@ export function ToolSwitch({ lang, active, variant }: { lang: Locale; active: 't
               <span className="tool-pill" aria-hidden />
             </ViewTransition>
           )}
-          <ViewTransition name={`tool-label-${variant}-${tab.id}`} share={{ 'tool-switch': 'auto', default: 'none' }} default="none">
+          <ViewTransition name={`tool-label-${variant}-${tab.id}`} share={{ 'tool-switch': 'tool-label', default: 'none' }} default="none">
             <span className="tool-label">{tab.label}</span>
           </ViewTransition>
         </Link>

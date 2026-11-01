@@ -16,6 +16,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Voice to text records on the audio thread (AudioWorklet, `public/recorder-worklet.js`) instead of the main thread, so a busy page can no longer drop or delay microphone audio. Browsers without AudioWorklet keep the old ScriptProcessorNode path.
 - `npm run preview` sends the same isolation headers as production (`serve.json`).
 
+### Fixed
+- Switching from Voice to text back to Text to voice: the sliding pill no longer covers the "Text to voice" label mid-slide (labels now stay above the pill during the transition).
+
 ## [1.1.2] - 2026-10-28
 
 ### Changed
