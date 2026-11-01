@@ -2,14 +2,14 @@
 
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronDown, Download, EllipsisVertical, Mic, Pause, Play, Plus, RotateCcw, Share2, Square, Upload, X } from 'lucide-react'
+import { Check, ChevronDown, Download, EllipsisVertical, Mic, Pause, Play, Plus, RotateCcw, Share2, Square, Trash2, Upload, X } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { ScrollFade } from './scroll-fade'
 import { TOOL_NAMES } from '@/content/tools'
 import { Waveform, type WaveMode } from '@/components/waveform'
 import { ScriptEditor } from '@/components/script-editor'
 import { attachMic, decodeToMono24k, detachMic, encodeWav, player, SAMPLE_RATE } from '@/lib/audio-stage'
-import { applyGain, concat, fadeEdges, limitPeak, prepareVoiceSample, silence, timeStretch } from '@/lib/audio-fx'
+import { applyGain, concat, fadeEdges, limitPeak, prepareVoiceSample, silence, timeStretch, wavePeaks } from '@/lib/audio-fx'
 import { DEMO_LINES, demoUrl } from '@/lib/demos'
 import { MOOD_EMOJI, MOODS, parseScript, SPEED_FACTOR, splitSentences, VOLUME_GAIN, type Mood } from '@/lib/script'
 import { canRecord, isLowPowerDevice, isSupported, StoppedError } from '@/lib/tts-engine'
@@ -27,8 +27,6 @@ import { useWakeLock } from '@/hooks/use-wake-lock'
 import type { UI } from '@/content/ui'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
 import { EmptyPane } from '@/components/empty-pane'
-import { HeaderActions } from '@/components/header-actions'
-import { JobStatus } from '@/components/job-status'
 
 const Sheet = dynamic(() => import('./sheet'), { ssr: false })
 const MIN_SECONDS = 5
@@ -444,7 +442,7 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
       setBusy(null)
       jobs.finish({ kind: 'tts', id: take.id, excerpt: take.text, seconds: seconds(take.audio) })
       // Plays by itself only while the tool is on screen; elsewhere the toast offers Play.
-      if (session.toolMounted) player.play(take.id, take.audio)
+      if (session.toolMounted && !document.hidden) player.play(take.id, take.audio)
     } catch (error) {
       setBusy(null)
       if (error instanceof StoppedError) { setStopped(true); return }
@@ -506,9 +504,18 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
     }
     player.toggle(take.id, take.audio)
   }
+  /** Delete one take (it lives only in this tab, so there is nothing else to clean up). */
+  const deleteTake = (take: Take) => {
+    if (playback.activeId === take.id) player.stop()
+    setTakes((current) => current.filter((item) => item.id !== take.id))
+  }
   const takeCards = takes.map((take) => (
-    <Generation key={take.id} ui={ui} lang={lang} take={take} playback={playback} now={now} onPlay={() => playTake(take)} />
+    <Generation key={take.id} ui={ui} lang={lang} take={take} playback={playback} now={now} onPlay={() => playTake(take)} onDelete={() => deleteTake(take)} />
   ))
+  // Clears the voice and all takes; sits in the generations heading.
+  const startAgain = (base || takes.length > 0) && (
+    <button className="btn btn-ghost btn-small" onClick={startOver} disabled={!!busy || voiceBlocked}><RotateCcw size={14} /> {ui.startOver}</button>
+  )
   const voicePanel = (
     <>
       <div className="tabs-row">
@@ -592,11 +599,6 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
 
   return (
     <div className="tool">
-      {(base || takes.length > 0) && (
-        <HeaderActions>
-          <button className="btn btn-ghost btn-small" onClick={startOver} disabled={!!busy || voiceBlocked}><RotateCcw size={14} /> {ui.startOver}</button>
-        </HeaderActions>
-      )}
 
 
       {!env.supported && <p className="note is-error">{ui.unsupported}</p>}
@@ -652,23 +654,21 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
           </div>
 
           <div className="pane-foot">
-            {/* Voice chip: opens the voice drawer on phones, a popover above it on desktop. A long job shows its status here instead. */}
-            {busy?.long ? <JobStatus lang={lang} progress={busy.progress} secondsLeft={busy.secondsLeft} /> : (
-              <div ref={voiceAnchorRef} className="voice-anchor">
-                <button className="voice-chip" title={voiceSummary} aria-label={`${ui.stepVoice}: ${voiceSummary}`}
-                  aria-haspopup="dialog" aria-expanded={sheetOpen}
-                  onClick={() => sheetOpen ? onSheetChange(false) : openVoices(base && base.source !== 'preset' ? 'mine' : voiceTab)}>
-                  <span className={`dot tone-${Math.max(0, PRESETS.findIndex((preset) => preset.id === (base?.preset?.id ?? PRESETS[0].id))) % 4}${ownClip ? ' is-own' : ''}`} aria-hidden />
-                  <span className="voice-chip-text">{voiceSummary}</span>
-                  <ChevronDown size={14} className="voice-chip-caret" aria-hidden />
-                </button>
-                {!isPhone && sheetOpen && (
-                  <div ref={voicePopoverRef} className="voice-popover" role="dialog" aria-label={ui.stepVoice} tabIndex={-1}>
-                    {voicePanel}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Voice chip: opens the voice drawer on phones, a popover above it on desktop. */}
+            <div ref={voiceAnchorRef} className="voice-anchor">
+              <button className="voice-chip" title={voiceSummary} aria-label={`${ui.stepVoice}: ${voiceSummary}`}
+                aria-haspopup="dialog" aria-expanded={sheetOpen}
+                onClick={() => sheetOpen ? onSheetChange(false) : openVoices(base && base.source !== 'preset' ? 'mine' : voiceTab)}>
+                <span className={`dot tone-${Math.max(0, PRESETS.findIndex((preset) => preset.id === (base?.preset?.id ?? PRESETS[0].id))) % 4}${ownClip ? ' is-own' : ''}`} aria-hidden />
+                <span className="voice-chip-text">{voiceSummary}</span>
+                <ChevronDown size={14} className="voice-chip-caret" aria-hidden />
+              </button>
+              {!isPhone && sheetOpen && (
+                <div ref={voicePopoverRef} className="voice-popover" role="dialog" aria-label={ui.stepVoice} tabIndex={-1}>
+                  {voicePanel}
+                </div>
+              )}
+            </div>
             {/* One button, one size: the label changes and a ring runs round the border, but the width never does. */}
             {(() => {
               const loading = !busy && model !== 'failed' && !!modelLabel
@@ -700,7 +700,10 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
         {!isPhone && (
           <aside className="pane pane-side pane-takes" aria-labelledby="generations-title">
             <div className="pane-fill">
-              <div className="pane-head"><h2 id="generations-title" className="pane-title">{ui.generationsTitle}</h2><span className="hint">{takes.length || ''}</span></div>
+              <div className="pane-head">
+                <h2 id="generations-title" className="pane-title">{ui.generationsTitle} <span className="hint">{takes.length || ''}</span></h2>
+                {startAgain}
+              </div>
               <div className="side-list">
                 {takes.length === 0 ? <EmptyPane kind="takes" title={ui.generationsEmptyTitle} text={ui.generationsEmpty} /> : takeCards}
               </div>
@@ -713,8 +716,8 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
       {isPhone && takes.length > 0 && (
         <section className="generations" aria-labelledby="generations-title">
           <div className="generations-head">
-            <h2 id="generations-title" className="generations-title">{ui.generationsTitle}</h2>
-            <span className="hint">{takes.length}</span>
+            <h2 id="generations-title" className="generations-title">{ui.generationsTitle} <span className="hint">{takes.length}</span></h2>
+            {startAgain}
           </div>
           <div className="generations-list">{takeCards}</div>
         </section>
@@ -817,7 +820,7 @@ function ClipRow({ ui, id, title, audio, playback, onRemove, disabled, progress 
   )
 }
 
-function TakeRow({ ui, take, playback, onToggle }: { ui: UI; take: Take; playback: Playback; onToggle?: () => void }) {
+function TakeRow({ ui, take, playback, onToggle, onDelete }: { ui: UI; take: Take; playback: Playback; onToggle?: () => void; onDelete?: () => void }) {
   const duration = seconds(take.audio)
   const active = playback.activeId === take.id && (playback.playingId === take.id || playback.position > 0)
   const fraction = active && playback.duration ? playback.position / playback.duration : 0
@@ -865,28 +868,17 @@ function TakeRow({ ui, take, playback, onToggle }: { ui: UI; take: Take; playbac
       <TakeMenu ui={ui} items={[
         ...(shareable ? [{ label: ui.share, icon: <Share2 size={16} />, run: () => void share() }] : []),
         { label: ui.downloadWav, icon: <Download size={16} />, run: download },
+        ...(onDelete ? [{ label: ui.deleteTake, icon: <Trash2 size={16} />, run: onDelete, danger: true }] : []),
       ]} />
     </div>
   )
 }
 
-/** Loudness of the audio in `count` buckets, 0–1, for the voice-message style waveform. */
-function wavePeaks(audio: Float32Array, count: number) {
-  const size = Math.max(1, Math.floor(audio.length / count))
-  const peaks: number[] = []
-  for (let i = 0; i < count; i++) {
-    let sum = 0
-    for (let j = i * size; j < Math.min(audio.length, (i + 1) * size); j++) sum += audio[j] * audio[j]
-    peaks.push(Math.sqrt(sum / size))
-  }
-  const max = Math.max(...peaks, 1e-6)
-  return peaks.map((peak) => Math.pow(peak / max, 0.7))
-}
 
 
 
 /** A small "more" menu for a take (share, download); more export formats go here later. */
-function TakeMenu({ ui, items }: { ui: UI; items: { label: string; icon: React.ReactNode; run: () => void }[] }) {
+function TakeMenu({ ui, items }: { ui: UI; items: { label: string; icon: React.ReactNode; run: () => void; danger?: boolean }[] }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useDismiss(ref, open, () => setOpen(false))
@@ -900,7 +892,7 @@ function TakeMenu({ ui, items }: { ui: UI; items: { label: string; icon: React.R
       {open && (
         <div className="menu-list" role="menu">
           {items.map((item) => (
-            <button key={item.label} role="menuitem" className="menu-item" onClick={() => { setOpen(false); item.run() }}>
+            <button key={item.label} role="menuitem" className={item.danger ? 'menu-item is-danger' : 'menu-item'} onClick={() => { setOpen(false); item.run() }}>
               {item.icon}{item.label}
             </button>
           ))}
@@ -930,11 +922,11 @@ function currentWord(take: Take | undefined, script: string, playback: Playback)
 }
 
 /** One generation: a compact player (waveform you can tap to seek), the text it says, its voice and when it was made. */
-function Generation({ ui, lang, take, playback, now, onPlay }: { ui: UI; lang: Locale; take: Take; playback: Playback; now: number; onPlay: () => void }) {
+function Generation({ ui, lang, take, playback, now, onPlay, onDelete }: { ui: UI; lang: Locale; take: Take; playback: Playback; now: number; onPlay: () => void; onDelete: () => void }) {
   const playing = playback.playingId === take.id
   return (
     <article className={playback.activeId === take.id ? 'generation is-loaded' : 'generation'}>
-      <TakeRow ui={ui} take={take} playback={playback} onToggle={onPlay} />
+      <TakeRow ui={ui} take={take} playback={playback} onToggle={onPlay} onDelete={onDelete} />
       <p className="generation-text">{take.text}</p>
       <p className="generation-meta">
         {take.voice && <span>{take.voice}</span>}

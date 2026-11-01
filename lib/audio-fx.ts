@@ -133,3 +133,16 @@ export function prepareVoiceSample(input: Float32Array, maxSeconds = 10, sampleR
   }
   return fadeEdges(input.slice(start * frame, Math.min(input.length, end * frame)), 20, sampleRate)
 }
+
+/** Loudness of the audio in `count` buckets, 0–1, for the voice-message style waveform. */
+export function wavePeaks(audio: Float32Array, count: number) {
+  const size = Math.max(1, Math.floor(audio.length / count))
+  const peaks: number[] = []
+  for (let i = 0; i < count; i++) {
+    let sum = 0
+    for (let j = i * size; j < Math.min(audio.length, (i + 1) * size); j++) sum += audio[j] * audio[j]
+    peaks.push(Math.sqrt(sum / size))
+  }
+  const max = Math.max(...peaks, 1e-6)
+  return peaks.map((peak) => Math.pow(peak / max, 0.7))
+}

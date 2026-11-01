@@ -2,7 +2,7 @@
 // Tiny on purpose: every page imports it; the engines stay in their own modules.
 
 export type JobKind = 'tts'
-export type RunningJob = { kind: JobKind; progress?: number }
+export type RunningJob = { kind: JobKind; id: number; progress?: number; secondsLeft?: number; long?: boolean }
 export type FinishedJob = { kind: JobKind; id: string; excerpt: string; seconds: number }
 type State = { running: RunningJob | null; finished: FinishedJob | null; notify: boolean }
 
@@ -19,9 +19,12 @@ export const jobs = {
     listeners.add(notify)
     return () => { listeners.delete(notify) }
   },
-  run(running: RunningJob | null) {
+  /** Report the running job (null when it ends). The id stays the same for one job, so a closed card stays closed. */
+  run(update: Omit<RunningJob, 'id'> | null) {
     const current = state.running
-    if (current === running || (current && running && current.kind === running.kind && current.progress === running.progress)) return
+    if (!update) { if (current) emit({ running: null }); return }
+    const running = { ...update, id: current?.id ?? Date.now() }
+    if (current && current.progress === running.progress && current.secondsLeft === running.secondsLeft && current.long === running.long) return
     emit({ running })
   },
   finish: (finished: FinishedJob) => emit({ running: null, finished }),

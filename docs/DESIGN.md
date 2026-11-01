@@ -37,7 +37,7 @@ Radii: 6 / 8 / 12 px (`--r-sm/md/lg`); drawers 18 px top corners; stage 16 px. F
 
 | Component | Rules |
 | --- | --- |
-| Header | Same on every page (tools, about, contact, legal, 404), on the 1016 px grid: wordmark left, tool switch centered (desktop), language pill right. No install button here (it is in the footer). |
+| Header | Same on every page (tools, about, contact, legal, 404), on the 1016 px grid: wordmark left, tool switch centered (desktop), job pill (only while a job runs) and language pill right. No install button or tool actions here (Start again is in the generations heading; install is in the footer). |
 | Logo mark | Gradient tile with four dark bars (`LogoMark`). Rest: bars breathe, a light passes every 5 s. Working: bars bounce. Live (playing / recording): bars follow the sound. Footer: still. Reduced motion: still. |
 | Tool switch | Two-part segmented control: "Text to voice │ Voice to text". Links, not tabs (each tool is its own page). Switching slides the white pill to the other tool (220 ms). |
 | Text card head | Language menu left (full name, same size on both tools), Hear a demo / Upload audio right. The two buttons have the same width (each holds the other's label invisibly), so switching tools does not move anything. Keep these labels short: they must fit next to the menu at 360 px. |
@@ -48,7 +48,8 @@ Radii: 6 / 8 / 12 px (`--r-sm/md/lg`); drawers 18 px top corners; stage 16 px. F
 | Action bar | Left: voice chip (voices: drawer on phones, popover on desktop) or speech model chip (Whistle / Whisper: drawer on phones, popover on desktop; shows the status while busy). Right: **fixed-size** action button (148×48 phones, 156×36 desktop). Working states: outline + running teal border (`.progress-ring`), short labels ("45%", "Stop"). |
 | Empty side pane | `EmptyPane`: a stack of three skeleton cards shaped like the real card (waveform row for takes, text lines for transcripts), a light sweep on the front card, a title and one line of help. Desktop only (phones hide empty lists). |
 | Generations / transcripts | Cards: compact player (play, waveform bars, time, ⋮ menu) + text clamp (2 lines) + meta (voice · time). Loaded item gets a teal outline. |
-| Menus | ⋮ menu for share/download; opens toward the side with room (never off screen). |
+| Menus | ⋮ menu for share / download / delete (delete in red, last); opens toward the side with room (never off screen). |
+| Background jobs | Header pill (ring + %) on every page while a job runs. One floating card at a time (bottom center on phones, above the action bar on tool pages; bottom right on desktop): long job (time left, Notify me, close = closed for that job) → ready (Play, stays until closed) → voice note player (WhatsApp style: avatar, pause, seekable waveform, time, voice name, 1× / 1.5× / 2×, close). Never autoplay outside the tool or in a hidden tab; never ask for notifications unprompted. |
 | Drawers | Vaul; handle, title + Done, full-width two-part switch, fixed height (`min(78dvh, 640px)`), swipe or tap outside to close. |
 | Scroll areas | No scrollbar; `ScrollFade` adds an edge fade only where content continues (scroll events, works in Firefox). |
 

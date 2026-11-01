@@ -50,7 +50,7 @@ export const studio = {
     const value = typeof update === 'function' ? (update as (current: StudioState[K]) => StudioState[K])(state[key]) : update
     if (Object.is(value, state[key])) return
     state = { ...state, [key]: value }
-    if (key === 'busy') jobs.run(state.busy ? { kind: 'tts', progress: state.busy.progress } : null)
+    if (key === 'busy') jobs.run(state.busy && { kind: 'tts', progress: state.busy.progress, secondsLeft: state.busy.secondsLeft, long: state.busy.long })
     listeners.forEach((notify) => notify())
   },
 }

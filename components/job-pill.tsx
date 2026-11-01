@@ -1,19 +1,15 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { JOBS } from '@/content/jobs'
 import { useJobs } from '@/hooks/use-jobs'
 import { localePath, type Locale } from '@/lib/i18n'
 
-const samePath = (a: string, b: string) => a.replace(/\/$/, '') === b.replace(/\/$/, '')
-
-/** Header pill while a generation runs and the visitor is on another page; a tap goes back to the tool. */
+/** Header pill on every page while a generation runs; a tap goes to the tool. */
 export function JobPill({ lang }: { lang: Locale }) {
   const { running } = useJobs()
-  const pathname = usePathname()
   const toolHref = localePath(lang)
-  if (!running || samePath(pathname, toolHref)) return null
+  if (!running) return null
   const progress = running.progress ?? 0
   const pct = Math.round(progress * 100)
   return (

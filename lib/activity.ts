@@ -16,6 +16,3 @@ export const activity = {
     return () => { listeners.delete(notify) }
   },
 }
-
-/** Id of the element in the site header where a tool puts its own actions (Start again). */
-export const HEADER_ACTIONS_ID = 'header-actions'

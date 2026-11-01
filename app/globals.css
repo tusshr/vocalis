@@ -106,7 +106,6 @@ body {
 @keyframes mark-talk { from { transform: scaleY(0.45); } to { transform: scaleY(1.55); } }
 @keyframes mark-shine { 0%, 60% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
 .topbar-actions { display: flex; align-items: center; gap: 6px; }
-.header-actions { display: contents; } /* a tool's own actions (Start again), rendered into the header */
 
 .hero { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
 .headline { font-size: clamp(26px, 7vw, 34px); line-height: 1.15; font-weight: 600; letter-spacing: -0.025em; max-width: 22ch; text-wrap: balance; }
@@ -765,29 +764,48 @@ html, body { overflow-x: clip; }
   background: conic-gradient(var(--accent) calc(var(--p, 0) * 360deg), var(--hairline-strong) 0);
   mask: radial-gradient(circle, transparent 4px, #000 4.5px);
 }
-.job-status, .job-status:hover { cursor: default; background: none; color: var(--body); }
-.job-status-hint { color: var(--muted); }
-.job-status-short { display: none; }
-.job-bell { width: 28px; height: 28px; flex: none; }
-.job-bell.is-on { color: var(--accent-ink); }
-@media (max-width: 1023px) {
-  .job-status, .job-status:hover { background: var(--raised); color: var(--ink); }
-  .job-status-hint, .job-status-long { display: none; }
-  .job-status-short { display: inline; }
-  .job-bell { margin-left: auto; width: 32px; height: 32px; }
-}
+.job-ring.is-big { width: 30px; height: 30px; mask: radial-gradient(circle, transparent 11px, #000 11.5px); }
 
-.job-toast {
+/* Floating card at the bottom: the running long job, "ready", or the voice note player. One at a time. */
+.dock-card {
   position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); width: min(420px, calc(100% - 24px));
   bottom: calc(16px + env(safe-area-inset-bottom));
   display: flex; align-items: center; gap: 10px; padding: 10px 8px 10px 12px;
   background: var(--raised); border: 1px solid var(--hairline-strong); border-radius: 14px; box-shadow: 0 14px 34px rgb(0 0 0 / 0.3);
 }
+@media (min-width: 1024px) { .dock-card { left: auto; right: 24px; transform: none; width: 400px; } }
 /* Tool pages on phones have a fixed action bar: sit above it. */
-@media (max-width: 1023px) { .shell-home ~ .job-toast { bottom: calc(80px + env(safe-area-inset-bottom)); } }
-.job-toast-icon { width: 30px; height: 30px; border-radius: 999px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent-ink); }
-.job-toast-text { flex: 1; min-width: 0; display: flex; flex-direction: column; color: inherit; text-decoration: none; }
-.job-toast-text strong { font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.job-toast-text span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (prefers-reduced-motion: no-preference) { .job-toast { animation: toast-in 180ms ease-out; } }
-@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 8px); } }
+@media (max-width: 1023px) { .shell-home ~ .dock-card { bottom: calc(80px + env(safe-area-inset-bottom)); } }
+@media (prefers-reduced-motion: no-preference) { .dock-card { animation: dock-in 180ms ease-out; } }
+@keyframes dock-in { from { opacity: 0; translate: 0 8px; } }
+.dock-icon { width: 30px; height: 30px; border-radius: 999px; flex: none; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent-ink); }
+.dock-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.dock-text strong { font-size: 14px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-text span { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock-notify { flex: none; gap: 5px; }
+/* Narrow phones: the bell alone (its label stays for screen readers via aria-label), and only the time left. */
+@media (max-width: 480px) { .dock-notify-label, .dock-hint { display: none; } .dock-notify { width: 32px; padding: 0; justify-content: center; } }
+.dock-notify.is-on { color: var(--accent-ink); border-color: color-mix(in srgb, var(--accent) 45%, transparent); cursor: default; }
+
+/* Voice note player (WhatsApp style). */
+.voice-note { gap: 8px; }
+.voice-note-avatar {
+  position: relative; width: 36px; height: 36px; border-radius: 999px; flex: none;
+  background: conic-gradient(from 200deg, var(--mint), var(--sky), var(--lavender), var(--peach), var(--mint));
+}
+.voice-note-avatar svg { position: absolute; right: -3px; bottom: -3px; width: 18px; height: 18px; padding: 3px; border-radius: 999px; background: var(--raised); color: var(--accent-ink); }
+.voice-note-toggle { flex: none; color: var(--ink); }
+.voice-note-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.voice-note-wave { position: relative; height: 24px; display: flex; align-items: center; gap: 2px; cursor: pointer; touch-action: none; border-radius: 4px; }
+.voice-note-wave:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.voice-note-wave i { flex: 1; min-width: 2px; border-radius: 2px; background: var(--hairline-strong); }
+.voice-note-wave i.is-played { background: var(--accent); }
+.voice-note-knob { position: absolute; top: 50%; width: 11px; height: 11px; border-radius: 999px; background: var(--accent); transform: translate(-50%, -50%); pointer-events: none; }
+.voice-note-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.voice-note-voice { color: var(--muted); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice-note-voice:hover { color: var(--ink); text-decoration: underline; }
+.voice-note-speed { flex: none; min-width: 40px; height: 26px; padding: 0 8px; border: 0; border-radius: 999px; background: var(--subtle); color: var(--ink); font: inherit; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; cursor: pointer; }
+
+/* Take menu: delete in red. Generations headings hold Start again. */
+.menu-item.is-danger { color: var(--error); }
+.generations-head { align-items: center; }

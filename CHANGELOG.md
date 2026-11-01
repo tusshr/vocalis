@@ -6,7 +6,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 ## [Unreleased]
 
 ### Added
-- Text to voice keeps generating while you move to another page of the site (pages change without a reload). During long jobs (over ~10 s) the voice chip in the action bar shows the progress, the time left, that you can browse other pages (desktop) and a bell for "Notify me when it's ready"; the bar keeps its height, so nothing moves. Other pages show a progress pill in the header (tap to go back); when the audio is ready a toast offers Play, and in a background tab the tab title changes and, if you asked, a system notification appears (tapping it opens the tool without a reload). Where notifications are not available or were blocked, the bell is not shown (the toast and tab title still work). Leaving the site while a job runs asks first. The voice model also stays loaded when you come back to the tool. All texts in 5 languages.
+- Text to voice keeps generating while you move to another page of the site (pages change without a reload). A progress pill sits in the header on every page while a job runs. Long jobs (over ~10 s) also show a floating card with the time left and an optional "Notify me" (asks for permission only when tapped; closing the card keeps it closed for that job). When the audio is ready on another page, a card offers Play, which turns it into a WhatsApp-style voice note player (pause, seek on the waveform, 1× / 1.5× / 2× at normal pitch) that keeps playing while you browse. In a background tab the tab title changes and, if asked, a system notification appears; a take finished in a background tab never starts playing by itself. Leaving the site while a job runs asks first. The voice model stays loaded when you come back to the tool. All texts in 5 languages.
+- Delete a single take from its ⋮ menu.
 - Voice to text uses **Whistle** (Cactus Compute, Apache-2.0) as a beta for English, Spanish, German and Italian: a ~18 MB download instead of ~77 MB, about twice as fast, and as accurate or better on our test clips. Portuguese keeps Whisper (Whistle does not speak it). The chip at the bottom left (where text to voice has its voice) shows the model and opens a picker for Whistle or Whisper with speed and download size (a drawer on phones, like the voice drawer; a popover on desktop; remembered in this browser). Only the model your language needs is downloaded. Audio longer than 28 s is cut at quiet moments; subtitles come from Whistle's word times.
 - The phone screen stays on while a model loads, a voice is recorded, a script is spoken or audio is transcribed (Screen Wake Lock API; browsers without it behave as before).
 
@@ -22,6 +23,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `npm run preview` sends the same isolation headers as production (`serve.json`).
 
 ### Fixed
+- "Start again" moved from the header to the "Your generations" heading.
 - Leaving text to voice while it was generating logged "The voice engine was reset." as an error; shutting the engine down on purpose now ends the step as stopped.
 - Contact, Privacy and Terms showed addresses that could not receive mail (`hello@` / `legal@` the site's host); they now show vocalis@zerouploads.com.
 - The page no longer shifts sideways when it starts to scroll: the scrollbar's space is always reserved (`scrollbar-gutter: stable`), so short and long pages line up.

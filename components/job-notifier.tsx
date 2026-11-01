@@ -1,30 +1,34 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
 import { usePathname, useRouter } from 'next/navigation'
-import { Check, Play, X } from 'lucide-react'
+import { excerpt, JobCard, ReadyCard } from '@/components/job-dock'
 import { JOBS } from '@/content/jobs'
 import { useJobs } from '@/hooks/use-jobs'
 import { jobs, type FinishedJob } from '@/lib/jobs'
 import { formatTime, localePath, type Locale } from '@/lib/i18n'
 import { SITE_NAME } from '@/lib/site'
 
-const TOAST_MS = 8000
-const excerpt = (text: string) => (text.length > 60 ? `${text.slice(0, 57).trimEnd()}…` : text)
+// The player brings the audio code; it loads only when Play is tapped.
+const VoiceNote = dynamic(() => import('@/components/voice-note'), { ssr: false })
 
 /**
- * One per page (mounted by the root document). When a background job ends:
- * on the tool page nothing extra (the take appears); on another page a toast; in a hidden tab the title changes
- * and, if the visitor asked for it, a system notification. While a job runs, leaving the site asks first.
+ * One per page (mounted by the root document), so it survives client navigation. Shows one floating card at a time:
+ * the voice note player, else "ready" (job done while on another page), else the running long job (closable, stays closed).
+ * In a hidden tab the title changes and, if the visitor asked for it, a system notification appears.
+ * While a job runs, leaving the site asks first.
  */
 export function JobNotifier({ lang }: { lang: Locale }) {
   const text = JOBS[lang]
-  const { running, finished } = useJobs()
+  const { running, finished, notify } = useJobs()
   const pathname = usePathname()
   const toolHref = localePath(lang)
   const onTool = pathname.replace(/\/$/, '') === toolHref.replace(/\/$/, '')
-  const [toast, setToast] = useState<FinishedJob | null>(null)
+  const [ready, setReady] = useState<FinishedJob | null>(null)
+  const [note, setNote] = useState<string | null>(null) // take id in the voice note player
+  const [closedJob, setClosedJob] = useState<number | null>(null)
+  const closeNote = useCallback(() => setNote(null), [])
   const titleRef = useRef<string | null>(null)
   const router = useRouter()
 
@@ -63,7 +67,7 @@ export function JobNotifier({ lang }: { lang: Locale }) {
     const show = () => {
       if (document.hidden) return
       if (titleRef.current !== null) { document.title = titleRef.current; titleRef.current = null }
-      if (!onTool) setToast(finished)
+      if (!onTool) setReady(finished)
       jobs.seen()
     }
     show()
@@ -71,28 +75,11 @@ export function JobNotifier({ lang }: { lang: Locale }) {
     return () => document.removeEventListener('visibilitychange', show)
   }, [finished, onTool, text.ready, toolHref])
 
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(null), TOAST_MS)
-    return () => clearTimeout(timer)
-  }, [toast])
+  // On the tool the take is in the list already.
+  useEffect(() => { if (onTool) setReady(null) }, [onTool])
 
-  if (!toast) return null
-  // The take's audio lives in the text to voice session; load that module only when Play is tapped.
-  const play = async () => {
-    const [{ studio }, { player }] = await Promise.all([import('@/lib/tts-studio'), import('@/lib/audio-stage')])
-    const take = studio.get().takes.find((item) => item.id === toast.id)
-    if (take) player.play(take.id, take.audio)
-  }
-  return (
-    <div className="job-toast" role="status">
-      <span className="job-toast-icon" aria-hidden><Check size={16} /></span>
-      <Link href={toolHref} className="job-toast-text" onClick={() => setToast(null)}>
-        <strong>{text.ready}</strong>
-        <span>“{excerpt(toast.excerpt)}” · {formatTime(toast.seconds)}</span>
-      </Link>
-      <button type="button" className="btn btn-primary btn-small" onClick={() => void play()}><Play size={13} aria-hidden /> {text.play}</button>
-      <button type="button" className="icon-btn" aria-label={text.dismiss} onClick={() => setToast(null)}><X size={16} /></button>
-    </div>
-  )
+  if (note) return <VoiceNote lang={lang} id={note} onClose={closeNote} />
+  if (ready) return <ReadyCard lang={lang} job={ready} onPlay={() => { setNote(ready.id); setReady(null) }} onClose={() => setReady(null)} />
+  if (running?.long && running.id !== closedJob) return <JobCard lang={lang} job={running} onTool={onTool} notify={notify} onClose={() => setClosedJob(running.id)} />
+  return null
 }
