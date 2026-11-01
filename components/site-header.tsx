@@ -5,6 +5,7 @@ import { ToolSwitch } from '@/components/tool-switch'
 import { CHROME } from '@/content/pages'
 import { localePath, type Locale } from '@/lib/i18n'
 import { SITE_NAME } from '@/lib/site'
+import { LogoMark } from '@/components/logo-mark'
 
 /** Every page's header: it stays still while the page cross-fades. */
 export function PinnedHeader({ children }: { children: React.ReactNode }) {
@@ -16,7 +17,7 @@ export function SiteHeader({ lang, page }: { lang: Locale; page?: string }) {
   return (
     <PinnedHeader>
       <header className="topbar">
-        <Link className="wordmark" href={localePath(lang)}><span className="wordmark-mark" aria-hidden />{SITE_NAME}</Link>
+        <Link className="wordmark" href={localePath(lang)}><LogoMark />{SITE_NAME}</Link>
         <ToolSwitch lang={lang} variant="header" />
         <div className="topbar-actions">
           <LanguageSwitcher lang={lang} page={page} label={CHROME[lang].language} />

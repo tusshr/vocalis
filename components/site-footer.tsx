@@ -5,6 +5,7 @@ import { UI_STRINGS } from '@/content/ui'
 import { TOOL_NAMES } from '@/content/tools'
 import { LANGUAGE_NAMES, LOCALES, localePath, type Locale } from '@/lib/i18n'
 import { SITE_NAME } from '@/lib/site'
+import { LogoMark } from '@/components/logo-mark'
 
 /** `page` is the current page slug when it exists in every language, so the switcher keeps you on it. */
 export function SiteFooter({ lang, page = '' }: { lang: Locale; page?: string }) {
@@ -14,7 +15,7 @@ export function SiteFooter({ lang, page = '' }: { lang: Locale; page?: string })
   return (
     <footer className="footer">
       <div className="footer-top">
-        <Link className="wordmark" href={localePath(lang)}><span className="wordmark-mark" aria-hidden />{SITE_NAME}</Link>
+        <Link className="wordmark" href={localePath(lang)}><LogoMark still />{SITE_NAME}</Link>
         <InstallButton ui={UI_STRINGS[lang]} />
       </div>
       <nav className="footer-nav" aria-label="Site">

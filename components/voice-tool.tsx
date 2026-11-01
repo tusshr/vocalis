@@ -19,12 +19,15 @@ import { canRecord, createEngine, isLowPowerDevice, isSupported, StoppedError, t
 import { ENGINE_LANGUAGE, fmt, isLocale, timeAgo, type Locale } from '@/lib/i18n'
 import { UI_STRINGS } from '@/content/ui'
 import { PRESETS, type Preset } from '@/lib/voices'
+import { useDismiss } from '@/lib/use-dismiss'
 import { useMediaQuery } from '@/lib/use-media-query'
 import { useWakeLock } from '@/lib/wake-lock'
 import type { UI } from '@/content/ui'
 import { SITE_NAME } from '@/lib/site'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
+import { LogoMark } from '@/components/logo-mark'
+import { EmptyPane } from '@/components/empty-pane'
 
 const Sheet = dynamic(() => import('./sheet'), { ssr: false })
 const MIN_SECONDS = 5
@@ -100,8 +103,7 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
   const isPhone = useMediaQuery('(max-width: 1023px)')
   const openVoices = (tab: 'voices' | 'mine' = 'voices') => {
     setVoiceTab(tab)
-    if (isPhone) setSheetOpen(true)
-    else document.getElementById('pane-voice')?.focus({ preventScroll: true })
+    setSheetOpen(true)
   }
   /** Closing the drawer never leaves the microphone on: a long enough recording is kept, a short one is dropped. */
   const onSheetChange = (open: boolean) => {
@@ -111,7 +113,16 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
     }
     setSheetOpen(open)
   }
-  useEffect(() => { if (!isPhone) setSheetOpen(false) }, [isPhone])
+  useEffect(() => { setSheetOpen(false) }, [isPhone])
+  // Desktop popover: closes on a click outside it (or on its chip) and on Escape, like the drawer.
+  const voiceAnchorRef = useRef<HTMLDivElement>(null)
+  const voicePopoverRef = useRef<HTMLDivElement>(null)
+  useDismiss(voiceAnchorRef, !isPhone && sheetOpen, () => onSheetChange(false))
+  useEffect(() => {
+    if (isPhone || !sheetOpen) return
+    voicePopoverRef.current?.scrollIntoView({ block: 'nearest' })
+    voicePopoverRef.current?.focus({ preventScroll: true })
+  }, [isPhone, sheetOpen])
 
   const engineRef = useRef<TTSEngine | null>(null)
   const cancelledRef = useRef(false)
@@ -506,6 +517,9 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
     }
     player.toggle(take.id, take.audio)
   }
+  const takeCards = takes.map((take) => (
+    <Generation key={take.id} ui={ui} lang={lang} take={take} playback={playback} now={now} onPlay={() => playTake(take)} />
+  ))
   const voicePanel = (
     <>
       <div className="tabs-row">
@@ -591,7 +605,7 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
     <div className="tool">
       <PinnedHeader>
         <header className="topbar">
-          <Link className="wordmark" href={homeHref}><span className="wordmark-mark" aria-hidden />{SITE_NAME}</Link>
+          <Link className="wordmark" href={homeHref}><LogoMark mode={stage.mode} />{SITE_NAME}</Link>
           <ToolSwitch lang={lang} active="tts" variant="header" />
           <div className="topbar-actions">
             {(base || takes.length > 0) && (
@@ -657,12 +671,21 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
           </div>
 
           <div className="pane-foot">
-            <button className="voice-chip" title={voiceSummary} aria-label={`${ui.stepVoice}: ${voiceSummary}`}
-              aria-haspopup="dialog" onClick={() => openVoices(base && base.source !== 'preset' ? 'mine' : voiceTab)}>
-              <span className={`dot tone-${Math.max(0, PRESETS.findIndex((preset) => preset.id === (base?.preset?.id ?? PRESETS[0].id))) % 4}${ownClip ? ' is-own' : ''}`} aria-hidden />
-              <span className="voice-chip-text">{voiceSummary}</span>
-              <ChevronDown size={14} className="voice-chip-caret" aria-hidden />
-            </button>
+            {/* Voice chip: opens the voice drawer on phones, a popover above it on desktop. */}
+            <div ref={voiceAnchorRef} className="voice-anchor">
+              <button className="voice-chip" title={voiceSummary} aria-label={`${ui.stepVoice}: ${voiceSummary}`}
+                aria-haspopup="dialog" aria-expanded={sheetOpen}
+                onClick={() => sheetOpen ? onSheetChange(false) : openVoices(base && base.source !== 'preset' ? 'mine' : voiceTab)}>
+                <span className={`dot tone-${Math.max(0, PRESETS.findIndex((preset) => preset.id === (base?.preset?.id ?? PRESETS[0].id))) % 4}${ownClip ? ' is-own' : ''}`} aria-hidden />
+                <span className="voice-chip-text">{voiceSummary}</span>
+                <ChevronDown size={14} className="voice-chip-caret" aria-hidden />
+              </button>
+              {!isPhone && sheetOpen && (
+                <div ref={voicePopoverRef} className="voice-popover" role="dialog" aria-label={ui.stepVoice} tabIndex={-1}>
+                  {voicePanel}
+                </div>
+              )}
+            </div>
             {/* One button, one size: the label changes and a ring runs round the border, but the width never does. */}
             {(() => {
               const loading = !busy && model !== 'failed' && !!modelLabel
@@ -690,29 +713,27 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
 
         </section>
 
-        {/* ---------- voice: a pane on desktop, a drawer on phones; same content ---------- */}
+        {/* ---------- your generations: the side pane on desktop (like transcripts in voice to text) ---------- */}
         {!isPhone && (
-          <aside id="pane-voice" tabIndex={-1} className="pane pane-voice" aria-labelledby="pane-voice-title">
-            {/* Absolutely filled, so the pane takes the text pane's height instead of setting its own. */}
+          <aside className="pane pane-side pane-takes" aria-labelledby="generations-title">
             <div className="pane-fill">
-              <div className="pane-head"><h2 id="pane-voice-title" className="pane-title">{ui.stepVoice}</h2></div>
-              {voicePanel}
+              <div className="pane-head"><h2 id="generations-title" className="pane-title">{ui.generationsTitle}</h2><span className="hint">{takes.length || ''}</span></div>
+              <div className="side-list">
+                {takes.length === 0 ? <EmptyPane kind="takes" title={ui.generationsEmptyTitle} text={ui.generationsEmpty} /> : takeCards}
+              </div>
             </div>
           </aside>
         )}
       </div>
 
-      {takes.length > 0 && (
+      {/* Phones: generations under the tool; the voice panel is a drawer. */}
+      {isPhone && takes.length > 0 && (
         <section className="generations" aria-labelledby="generations-title">
           <div className="generations-head">
             <h2 id="generations-title" className="generations-title">{ui.generationsTitle}</h2>
             <span className="hint">{takes.length}</span>
           </div>
-          <div className="generations-list">
-            {takes.map((take) => (
-              <Generation key={take.id} ui={ui} lang={lang} take={take} playback={playback} now={now} onPlay={() => playTake(take)} />
-            ))}
-          </div>
+          <div className="generations-list">{takeCards}</div>
         </section>
       )}
 
@@ -896,14 +917,9 @@ function wavePeaks(audio: Float32Array, count: number) {
 function TakeMenu({ ui, items }: { ui: UI; items: { label: string; icon: React.ReactNode; run: () => void }[] }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open) return
-    const onDown = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false) }
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
-    document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('pointerdown', onDown); document.removeEventListener('keydown', onKey) }
-  }, [open])
+  useDismiss(ref, open, () => setOpen(false))
+  // In the scrolling side pane the menu may start below the fold.
+  useEffect(() => { if (open) ref.current?.querySelector('.menu-list')?.scrollIntoView({ block: 'nearest' }) }, [open])
   return (
     <div ref={ref} className="menu">
       <button className="icon-btn" aria-label={ui.moreActions} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>

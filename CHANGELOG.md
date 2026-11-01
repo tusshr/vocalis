@@ -10,6 +10,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The phone screen stays on while a model loads, a voice is recorded, a script is spoken or audio is transcribed (Screen Wake Lock API; browsers without it behave as before).
 
 ### Changed
+- Text to voice on desktop: your generations now live in the right pane (like transcripts in voice to text) instead of under the tool; the voices open from the voice chip as a popover. Phones are unchanged (voice drawer, generations under the tool).
+- Both tools show a designed empty state in the side pane: skeleton cards shaped like a take or a transcript, a title and one line of help (5 languages).
+- The logo is alive: its bars breathe at rest, bounce while working and follow the sound while audio plays or the mic records. Still in the footer and for reduced motion.
 - Faster voice to text: the site is now cross-origin isolated (`Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Embedder-Policy: credentialless` in `vercel.json` and `public/_headers`), so the models can use several CPU threads. Transcription went from about 1.8× to 2.6× real time on a 4-core test machine. Safari has no `credentialless` and stays single-threaded, as before.
 - Text to voice uses 2 threads when isolated (measured fastest on 4 cores: 1 thread 0.77×, 2 threads 0.89×, 4 threads slower). Small gain: about +5–15% depending on machine load.
 - Voice to text can try WebGPU with `?device=webgpu` (for testing only; the default stays WebAssembly). If WebGPU fails to load, it falls back to WebAssembly.

@@ -16,9 +16,12 @@ import { TOOL_NAMES } from '@/content/tools'
 import { attachMic, detachMic, formatTime } from '@/lib/audio-stage'
 import { fmt, localePath, timeAgo, type Locale } from '@/lib/i18n'
 import { SITE_NAME } from '@/lib/site'
+import { useDismiss } from '@/lib/use-dismiss'
 import { useMediaQuery } from '@/lib/use-media-query'
 import { useWakeLock } from '@/lib/wake-lock'
 import { decodeTo16k, engineFor, getSttEngine, resampleTo16k, STT_RATE, sttSupported, toSrt, type SttChunk, type SttEngineKind } from '@/lib/stt-engine'
+import { LogoMark } from '@/components/logo-mark'
+import { EmptyPane } from '@/components/empty-pane'
 
 type Entry = { id: string; text: string; chunks: SttChunk[]; seconds: number; at: number }
 type Phase = 'idle' | 'recording' | 'finishing' | 'transcribing'
@@ -280,7 +283,7 @@ export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttCont
     <div className="tool">
       <PinnedHeader>
         <header className="topbar">
-          <Link className="wordmark" href={localePath(lang)}><span className="wordmark-mark" aria-hidden />{SITE_NAME}</Link>
+          <Link className="wordmark" href={localePath(lang)}><LogoMark mode={waveMode} />{SITE_NAME}</Link>
           <ToolSwitch lang={lang} active="stt" variant="header" />
           <div className="topbar-actions">
             <LanguageSwitcher lang={lang} page="voice-to-text" label={languageLabel} />
@@ -367,7 +370,7 @@ export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttCont
           <div className="pane-fill">
             <div className="pane-head"><h2 id="transcripts-title" className="pane-title">{ui.transcripts}</h2><span className="hint">{history.length || ''}</span></div>
             <div className="side-list">
-              {history.length === 0 && <p className="hint">{ui.emptyHistory}</p>}
+              {history.length === 0 && <EmptyPane kind="transcripts" title={ui.emptyHistoryTitle} text={ui.emptyHistory} />}
               {history.map((entry) => (
                 <article key={entry.id} className={entry.id === activeId ? 'generation is-loaded' : 'generation'}>
                   <button className="transcript-open" onClick={() => open(entry)} disabled={phase !== 'idle'} aria-label={`${ui.open}: ${entry.text.slice(0, 40)}`}>
@@ -395,14 +398,7 @@ function ModelChip({ ui, kind, canPick, disabled, onPick, children }: {
   const [open, setOpen] = useState(false)
   const isPhone = useMediaQuery('(max-width: 1023px)')
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    if (!open || isPhone) return
-    const onDown = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false) }
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
-    document.addEventListener('pointerdown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => { document.removeEventListener('pointerdown', onDown); document.removeEventListener('keydown', onKey) }
-  }, [open, isPhone])
+  useDismiss(ref, open && !isPhone, () => setOpen(false))
   useEffect(() => { if (disabled) setOpen(false) }, [disabled])
   const options = [
     { kind: 'whistle' as const, name: 'Whistle', tag: ui.beta, note: ui.whistleNote },

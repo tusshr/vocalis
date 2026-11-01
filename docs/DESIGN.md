@@ -29,22 +29,24 @@ Radii: 6 / 8 / 12 px (`--r-sm/md/lg`); drawers 18 px top corners; stage 16 px. F
 
 ## Layout
 
-- Desktop (≥1024 px): `.shell-home` max 1080 px (workbench renders ~1016 px; editor ~72 characters per line). Workspace grid: main pane + 360 px side pane (voices / transcripts), side pane takes the main pane's height and scrolls inside. Article below in one 720 px column (like Real Online Ruler). Footer in the same column.
-- Phones: single column; header (wordmark + language) sticky with a frosted blur; tool switch under the header; text card; fixed action bar at the bottom; side content in a Vaul drawer (text to voice) or below the card (voice to text, hidden while empty).
+- Desktop (≥1024 px): `.shell-home` max 1080 px (workbench renders ~1016 px; editor ~72 characters per line). Workspace grid: main pane + 360 px side pane (your generations / your transcripts: the same pattern on both tools), side pane takes the main pane's height and scrolls inside. Voices open from the voice chip as a popover. Article below in one 720 px column (like Real Online Ruler). Footer in the same column.
+- Phones: single column; header (wordmark + language) sticky with a frosted blur; tool switch under the header; text card; fixed action bar at the bottom; voices in a Vaul drawer; generations and transcripts below the card (hidden while empty).
 - Sticky header: full-bleed frosted bar (`backdrop-filter: blur(14px) saturate(1.5)`, canvas at 78%), hairline bottom border, safe-area aware.
 
 ## Components
 
 | Component | Rules |
 | --- | --- |
-| Header | Wordmark left, tool switch centered (desktop), language pill right. No install button here (it is in the footer). |
+| Header | Same on every page (tools, about, contact, legal, 404), on the 1016 px grid: wordmark left, tool switch centered (desktop), language pill right. No install button here (it is in the footer). |
+| Logo mark | Gradient tile with four dark bars (`LogoMark`). Rest: bars breathe, a light passes every 5 s. Working: bars bounce. Live (playing / recording): bars follow the sound. Footer: still. Reduced motion: still. |
 | Tool switch | Two-part segmented control: "Text to voice │ Voice to text". Links, not tabs (each tool is its own page). Switching slides the white pill to the other tool (220 ms). |
 | Text card head | Language menu left (full name, same size on both tools), Hear a demo / Upload audio right. The two buttons have the same width (each holds the other's label invisibly), so switching tools does not move anything. Keep these labels short: they must fit next to the menu at 360 px. |
 | Stage | The first version's clean waveform: soft mint/peach/lavender glow, slim white bars, **no text, no buttons**. Idle, working (generating / loading), live (playing / recording). ~136 px phones, 160 px desktop. Recording shows a red dot + timer top-left. |
 | Editor | Textarea over a mirrored backdrop that tints whole effect spans and marks the spoken word. 17 px text on both tools, same left edge. |
 | Rails (row under the text) | Same shape on both tools: icon buttons left, chips in the middle (scroll, edge fade), count right. Text to voice: ↺ reset (always there, disabled on the example text), sliders, effect chips, characters. Voice to text (always shown, actions disabled until there is text): ＋ New transcript, Copy, Read aloud, .txt, .srt, words. Phones swipe; desktop scrolls with the mouse wheel (no Shift) or by dragging. No arrow buttons (tried in 1.1.0, removed). |
 | Effect picker | Phones: Vaul drawer. Desktop: popover above the effects row (Escape / outside click closes). Emotions as tiles with description; delivery tiles show syntax; pauses 0.5–3 s. |
-| Action bar | Left: voice chip (opens the voice drawer) or mic status. Right: **fixed-size** action button (148×48 phones, 156×36 desktop). Working states: outline + running teal border (`.progress-ring`), short labels ("45%", "Stop"). |
+| Action bar | Left: voice chip (voices: drawer on phones, popover on desktop) or speech model chip (Whistle / Whisper: drawer on phones, popover on desktop; shows the status while busy). Right: **fixed-size** action button (148×48 phones, 156×36 desktop). Working states: outline + running teal border (`.progress-ring`), short labels ("45%", "Stop"). |
+| Empty side pane | `EmptyPane`: a stack of three skeleton cards shaped like the real card (waveform row for takes, text lines for transcripts), a light sweep on the front card, a title and one line of help. Desktop only (phones hide empty lists). |
 | Generations / transcripts | Cards: compact player (play, waveform bars, time, ⋮ menu) + text clamp (2 lines) + meta (voice · time). Loaded item gets a teal outline. |
 | Menus | ⋮ menu for share/download; opens toward the side with room (never off screen). |
 | Drawers | Vaul; handle, title + Done, full-width two-part switch, fixed height (`min(78dvh, 640px)`), swipe or tap outside to close. |
