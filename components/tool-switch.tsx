@@ -3,8 +3,8 @@ import { ViewTransition } from 'react'
 import { localePath, type Locale } from '@/lib/i18n'
 import { TOOL_NAMES } from '@/content/tools'
 
-/** The two tools as links (each is its own page). Names include `variant`: both switches are in the DOM. */
-export function ToolSwitch({ lang, active, variant }: { lang: Locale; active: 'tts' | 'stt'; variant: 'header' | 'inline' }) {
+/** The two tools as links (each is its own page); no `active` on pages that are not a tool. Names include `variant`: both switches are in the DOM. */
+export function ToolSwitch({ lang, active, variant }: { lang: Locale; active?: 'tts' | 'stt'; variant: 'header' | 'inline' }) {
   const names = TOOL_NAMES[lang]
   const tabs = [
     { id: 'tts', href: localePath(lang), label: names.tts },

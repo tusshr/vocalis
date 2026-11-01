@@ -133,12 +133,12 @@ body {
 .link { color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
 .link:hover { color: var(--ink); }
 
-.icon-btn, .icon-pill {
+.icon-btn {
   width: 32px; height: 32px; flex: none; border-radius: var(--r-md);
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--body); background: transparent; border: 1px solid transparent;
 }
-.icon-btn:hover:not(:disabled), .icon-pill:hover { background: var(--subtle); color: var(--ink); }
+.icon-btn:hover:not(:disabled) { background: var(--subtle); color: var(--ink); }
 .icon-btn.is-primary { background: var(--primary); color: var(--on-primary); }
 .icon-btn:disabled { opacity: 0.4; }
 
@@ -317,7 +317,7 @@ body {
   /* Comfortable touch targets (44px and up). */
   .btn { height: 44px; padding: 0 16px; font-size: 15px; border-radius: 10px; }
   .btn-small { height: 36px; padding: 0 12px; font-size: 14px; }
-  .icon-btn, .icon-pill { width: 40px; height: 40px; }
+  .icon-btn { width: 40px; height: 40px; }
   .chip { height: 36px; padding: 0 12px; font-size: 14px; border-radius: 8px; }
   .effects-all { width: 40px; height: 36px; border-radius: 8px; }
   .char-count { font-size: 13px; }
@@ -410,7 +410,7 @@ body {
 .article p, .article li { font-size: 16px; line-height: 1.75; }
 .article ol { display: flex; flex-direction: column; gap: 8px; padding-left: 1.4em; list-style: decimal; }
 .article ol li::marker { color: var(--muted); font-variant-numeric: tabular-nums; }
-.article a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.article a:not(.btn) { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 
 .faq { display: flex; flex-direction: column; }
 .faq details { border-bottom: 1px solid var(--hairline); }
@@ -451,6 +451,8 @@ body {
   .shell-home { max-width: 1080px; padding-left: calc(32px + env(safe-area-inset-left)); padding-right: calc(32px + env(safe-area-inset-right)); gap: 24px; }
   .shell-home .article { margin-top: 32px; }
   .shell:not(.shell-home) { max-width: 720px; }
+  /* Reading pages keep a 720 px column, but their header content sits on the tool pages' 1016 px grid. */
+  .shell:not(.shell-home) .topbar { padding-inline: max(32px, calc(50vw - 508px)); }
   .hero { padding-top: 16px; }
   .headline { font-size: 36px; max-width: none; }
   .shell-home .tool { gap: 24px; }

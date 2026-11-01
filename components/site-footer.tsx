@@ -15,7 +15,7 @@ export function SiteFooter({ lang, page = '' }: { lang: Locale; page?: string })
     <footer className="footer">
       <div className="footer-top">
         <Link className="wordmark" href={localePath(lang)}><span className="wordmark-mark" aria-hidden />{SITE_NAME}</Link>
-        <InstallButton ui={UI_STRINGS[lang]} variant="footer" />
+        <InstallButton ui={UI_STRINGS[lang]} />
       </div>
       <nav className="footer-nav" aria-label="Site">
         <Link href={localePath(lang)}>{TOOL_NAMES[lang].tts}</Link>

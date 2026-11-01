@@ -9,7 +9,7 @@ export function ErrorView({ lang, reset }: { lang: string; reset: () => void }) 
   const text = ERRORS[locale]
   return (
     <main className="shell">
-      <header className="topbar"><a className="wordmark" href={localePath(locale)}>{SITE_NAME}</a></header>
+      <header className="topbar"><a className="wordmark" href={localePath(locale)}><span className="wordmark-mark" aria-hidden />{SITE_NAME}</a></header>
       <section className="article prose" role="alert">
         <h1 className="page-title">{text.title}</h1>
         <p className="lede">{text.text}</p>
