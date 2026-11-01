@@ -94,7 +94,8 @@ To do, most useful first:
    - **Not doing: celebrity presets** (Trump etc.). Cloning a real person without consent breaks right-of-publicity and deepfake laws in many places, Kyutai's terms forbid impersonation, and ad networks ban it. Real risk to the site; no upside worth it.
 
 1. Export for sharing: small files (OGG/Opus for WhatsApp voice notes, M4A), **captioned video** (waveform + highlighted words, MP4 for Reels/TikTok/Status — nobody free does this), subtitles for text to voice takes.
-2. Voice cleaner (third tool): open-source denoiser vs. Desert Ant Labs Clear; "clean before cloning" option.
+2. Voice cleaner (owner interested 2026-11-01). Start with **"Enhance" on the cloning sample** (the cloner copies noise, so this lifts clone quality), later a third tool page. Plan: **DeepFilterNet 3** (~8 MB, MIT/Apache dual, 48 kHz, WASM build exists; removes noise and some room echo) then a Web Audio chain in `OfflineAudioContext` (high-pass ~80 Hz, light EQ, compressor, loudness to about −16 LUFS). Fallbacks: DTLN (~4 MB, MIT), RNNoise (~100 KB, BSD-3, steady noise only). Honest limit: Adobe Podcast–style "studio" re-synthesis needs large generative models; nothing that size runs in a phone browser yet. Also compare Desert Ant Labs Clear.
+   - Feature ideas from VoiceStudio (AGPL-3.0: ideas only, no code): dialogue (item 3), audiobook-length texts (item 4), transcript → speak in your cloned voice. Skipped: voice design, dubbing (need models too big for the browser).
 3. Multi-speaker dialogue (`[Alba]: … [Bill]: …`).
 4. Longer texts (chunked), pronunciation dictionary.
 5. Retry the missing demo `es/alba-merchant.mp3` (`python3 tools/make-demos.py es`, check with a transcription).
