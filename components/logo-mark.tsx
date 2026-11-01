@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { WaveMode } from '@/components/waveform'
+import { useActivity } from '@/hooks/use-activity'
 
 /**
- * The Vocalis mark: four bars on the gradient tile. At rest they breathe (CSS); while working they bounce (CSS);
+ * The Vocalis mark: four bars on the gradient tile. At rest they breathe (CSS); while the tool works they bounce (CSS);
  * while audio plays or the mic records ("live") they follow the shared analyser. `still` turns motion off (footer).
  */
-export function LogoMark({ mode = 'idle', still = false }: { mode?: WaveMode; still?: boolean }) {
+export function LogoMark({ still = false }: { still?: boolean }) {
   const ref = useRef<HTMLSpanElement>(null)
+  const mode = useActivity()
   const live = mode === 'live' && !still
 
   useEffect(() => {

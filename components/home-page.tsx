@@ -3,9 +3,9 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { HomeArticle } from '@/components/home-article'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import { ToolSwitch } from '@/components/tool-switch'
 import { VoiceTool } from '@/components/voice-tool'
 import { HOME } from '@/content/home'
-import { CHROME } from '@/content/pages'
 import { UI_STRINGS } from '@/content/ui'
 import { localePath, type Locale } from '@/lib/i18n'
 import { pageMetadata } from '@/lib/seo'
@@ -61,8 +61,10 @@ export function HomePage({ lang }: { lang: Locale }) {
   ]
   return (
     <main className="shell shell-home">
-      <ErrorBoundary lang={lang} header={<SiteHeader lang={lang} />}>
-        <VoiceTool ui={UI_STRINGS[lang]} lang={lang} homeHref={localePath(lang)} languageLabel={CHROME[lang].language} />
+      <SiteHeader lang={lang} active="tts" />
+      <ToolSwitch lang={lang} active="tts" variant="inline" />
+      <ErrorBoundary lang={lang}>
+        <VoiceTool ui={UI_STRINGS[lang]} lang={lang} />
       </ErrorBoundary>
       <HomeArticle content={content} title={UI_STRINGS[lang].headline} lede={UI_STRINGS[lang].subhead} />
       <SiteFooter lang={lang} />

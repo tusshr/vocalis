@@ -1,26 +1,22 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, Copy, Download, FileText, Mic, Play, Plus, Square, Upload, Volume2, X } from 'lucide-react'
-import { LanguageSwitcher } from '@/components/language-switcher'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
 import { ScrollFade } from '@/components/scroll-fade'
-import { PinnedHeader } from '@/components/site-header'
-import { ToolSwitch } from '@/components/tool-switch'
 import { Waveform, type WaveMode } from '@/components/waveform'
 import type { SttContent } from '@/content/stt'
 import { TOOL_NAMES } from '@/content/tools'
 import { attachMic, detachMic, formatTime } from '@/lib/audio-stage'
 import { fmt, localePath, timeAgo, type Locale } from '@/lib/i18n'
 import { SITE_NAME } from '@/lib/site'
-import { useDismiss } from '@/lib/use-dismiss'
-import { useMediaQuery } from '@/lib/use-media-query'
-import { useWakeLock } from '@/lib/wake-lock'
+import { usePublishActivity } from '@/hooks/use-activity'
+import { useDismiss } from '@/hooks/use-dismiss'
+import { useMediaQuery } from '@/hooks/use-media-query'
+import { useWakeLock } from '@/hooks/use-wake-lock'
 import { decodeTo16k, engineFor, getSttEngine, resampleTo16k, STT_RATE, sttSupported, toSrt, type SttChunk, type SttEngineKind } from '@/lib/stt-engine'
-import { LogoMark } from '@/components/logo-mark'
 import { EmptyPane } from '@/components/empty-pane'
 
 type Entry = { id: string; text: string; chunks: SttChunk[]; seconds: number; at: number }
@@ -32,7 +28,7 @@ const SEGMENT_SECONDS = 24 // Whisper hears 30 s at a time; a recording is split
 const LIVE_EVERY_MS = 3000
 
 /** Voice to text: record or upload, Whisper writes it down, then copy, download or read it aloud. */
-export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttContent['ui']; languageLabel: string }) {
+export function SttTool({ lang, ui }: { lang: Locale; ui: SttContent['ui'] }) {
   const [speechLang, setSpeechLang] = useState<Locale>(lang)
   const [phase, setPhase] = useState<Phase>('idle')
   const [model, setModel] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle')
@@ -264,6 +260,7 @@ export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttCont
   const working = phase !== 'idle' && phase !== 'recording'
   const hasText = phase === 'idle' && !!transcript.trim()
   const waveMode: WaveMode = phase === 'recording' ? 'live' : working || model === 'loading' ? 'working' : 'idle'
+  usePublishActivity(waveMode)
   const words = transcript.trim() ? transcript.trim().split(/\s+/).length : 0
   const supported = typeof window === 'undefined' || sttSupported()
 
@@ -281,16 +278,6 @@ export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttCont
 
   return (
     <div className="tool">
-      <PinnedHeader>
-        <header className="topbar">
-          <Link className="wordmark" href={localePath(lang)}><LogoMark mode={waveMode} />{SITE_NAME}</Link>
-          <ToolSwitch lang={lang} active="stt" variant="header" />
-          <div className="topbar-actions">
-            <LanguageSwitcher lang={lang} page="voice-to-text" label={languageLabel} />
-          </div>
-        </header>
-      </PinnedHeader>
-      <ToolSwitch lang={lang} active="stt" variant="inline" />
 
       {!supported && <p className="note is-error">{ui.unsupported}</p>}
       <input ref={fileRef} type="file" accept="audio/*,video/*" className="sr-only" tabIndex={-1} aria-label={TOOL_NAMES[lang].upload}

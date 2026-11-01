@@ -106,6 +106,7 @@ body {
 @keyframes mark-talk { from { transform: scaleY(0.45); } to { transform: scaleY(1.55); } }
 @keyframes mark-shine { 0%, 60% { transform: translateX(-120%); } 85%, 100% { transform: translateX(120%); } }
 .topbar-actions { display: flex; align-items: center; gap: 6px; }
+.header-actions { display: contents; } /* a tool's own actions (Start again), rendered into the header */
 
 .hero { display: flex; flex-direction: column; gap: 8px; padding-top: 8px; }
 .headline { font-size: clamp(26px, 7vw, 34px); line-height: 1.15; font-weight: 600; letter-spacing: -0.025em; max-width: 22ch; text-wrap: balance; }
@@ -622,7 +623,7 @@ html, body { overflow-x: clip; }
 .effects-popover .effect-name { font-size: 14px; }
 .effects-all[aria-expanded='true'] { background: var(--subtle); border-color: var(--ink); }
 
-/* Home: the tool's wrapper lays out nothing itself, so the sticky header belongs to the whole page, not just the tool. */
+/* Tool pages: the tool's wrapper lays out nothing itself; its parts sit in the page column with the page's spacing. */
 .shell-home .tool { display: contents; }
 
 /* ---------- studio switch: Text to voice | Voice to text ---------- */
@@ -633,9 +634,6 @@ html, body { overflow-x: clip; }
 }
 .tool-switch a:hover { color: var(--ink); }
 .tool-switch a[aria-current='page'] { color: var(--ink); }
-/* Pages that are not a tool (about, legal, 404): plain links, no track, since no tool is selected. */
-.tool-switch.is-nav { background: transparent; }
-.tool-switch.is-nav a:hover { background: var(--subtle); }
 .tool-pill { position: absolute; inset: 0; border-radius: 8px; background: var(--panel); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 0 0 1px var(--hairline); }
 .tool-label { position: relative; }
 .tool-switch-header { display: none; }

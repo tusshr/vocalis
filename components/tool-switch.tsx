@@ -11,7 +11,7 @@ export function ToolSwitch({ lang, active, variant }: { lang: Locale; active?: '
     { id: 'stt', href: localePath(lang, 'voice-to-text'), label: names.stt },
   ] as const
   return (
-    <nav className={`tool-switch tool-switch-${variant}${active ? '' : ' is-nav'}`} aria-label="Tools">
+    <nav className={`tool-switch tool-switch-${variant}`} aria-label="Tools">
       {tabs.map((tab) => (
         <Link key={tab.id} href={tab.href} transitionTypes={['tool-switch']} aria-current={active === tab.id ? 'page' : undefined}>
           {active === tab.id && (

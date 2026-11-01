@@ -1,13 +1,10 @@
 'use client'
 
 
-import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronDown, Download, EllipsisVertical, Mic, Pause, Play, Plus, RotateCcw, Share2, Square, Upload, X } from 'lucide-react'
 import dynamic from 'next/dynamic'
 import { ScrollFade } from './scroll-fade'
-import Link from 'next/link'
-import { PinnedHeader } from './site-header'
-import { ToolSwitch } from './tool-switch'
 import { TOOL_NAMES } from '@/content/tools'
 import { Waveform, type WaveMode } from '@/components/waveform'
 import { ScriptEditor } from '@/components/script-editor'
@@ -19,15 +16,15 @@ import { canRecord, createEngine, isLowPowerDevice, isSupported, StoppedError, t
 import { ENGINE_LANGUAGE, fmt, isLocale, timeAgo, type Locale } from '@/lib/i18n'
 import { UI_STRINGS } from '@/content/ui'
 import { PRESETS, type Preset } from '@/lib/voices'
-import { useDismiss } from '@/lib/use-dismiss'
-import { useMediaQuery } from '@/lib/use-media-query'
-import { useWakeLock } from '@/lib/wake-lock'
+import { usePublishActivity } from '@/hooks/use-activity'
+import { useDismiss } from '@/hooks/use-dismiss'
+import { usePlayback, type Playback } from '@/hooks/use-playback'
+import { useMediaQuery } from '@/hooks/use-media-query'
+import { useWakeLock } from '@/hooks/use-wake-lock'
 import type { UI } from '@/content/ui'
-import { SITE_NAME } from '@/lib/site'
-import { LanguageSwitcher } from '@/components/language-switcher'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
-import { LogoMark } from '@/components/logo-mark'
 import { EmptyPane } from '@/components/empty-pane'
+import { HeaderActions } from '@/components/header-actions'
 
 const Sheet = dynamic(() => import('./sheet'), { ssr: false })
 const MIN_SECONDS = 5
@@ -54,7 +51,7 @@ function friendlyError(error: unknown, ui: UI) {
 const seconds = (audio: Float32Array) => audio.length / SAMPLE_RATE
 const presetLabel = (preset: Preset, ui: UI) => `${preset.name}, ${ui.styles[preset.style]}`
 
-export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang: Locale; homeHref: string; languageLabel: string }) {
+export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
   const [env, setEnv] = useState({ supported: true, recordable: true, lowPower: false })
 
   const [base, setBase] = useState<Clip | null>(null)
@@ -341,7 +338,7 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
       // Installed apps ask the browser to keep the ~140 MB model (browsers can clear caches under storage pressure).
       if (matchMedia('(display-mode: standalone)').matches) void navigator.storage?.persist?.()
     } catch (error) {
-      if (token !== loadTokenRef.current) return
+      if (token !== loadTokenRef.current || error instanceof StoppedError) return
       console.error('[vocalis] load', error)
       engineRef.current?.terminate()
       engineRef.current = null
@@ -487,6 +484,7 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
     if (decoding || busy || model === 'loading') return { mode: 'working', text: null }
     return { mode: 'idle', text: null }
   })()
+  usePublishActivity(stage.mode)
 
   /** Model download as ring progress: a value from 0 to 1, or undefined while the size is not known. */
   const modelProgress: Progress | undefined = model !== 'loading' ? undefined
@@ -603,19 +601,11 @@ export function VoiceTool({ ui, lang, homeHref, languageLabel }: { ui: UI; lang:
 
   return (
     <div className="tool">
-      <PinnedHeader>
-        <header className="topbar">
-          <Link className="wordmark" href={homeHref}><LogoMark mode={stage.mode} />{SITE_NAME}</Link>
-          <ToolSwitch lang={lang} active="tts" variant="header" />
-          <div className="topbar-actions">
-            {(base || takes.length > 0) && (
-              <button className="btn btn-ghost btn-small" onClick={startOver} disabled={!!busy || voiceBlocked}><RotateCcw size={14} /> {ui.startOver}</button>
-            )}
-            <LanguageSwitcher lang={lang} label={languageLabel} />
-          </div>
-        </header>
-      </PinnedHeader>
-      <ToolSwitch lang={lang} active="tts" variant="inline" />
+      {(base || takes.length > 0) && (
+        <HeaderActions>
+          <button className="btn btn-ghost btn-small" onClick={startOver} disabled={!!busy || voiceBlocked}><RotateCcw size={14} /> {ui.startOver}</button>
+        </HeaderActions>
+      )}
 
 
       {!env.supported && <p className="note is-error">{ui.unsupported}</p>}
@@ -788,17 +778,6 @@ function PresetList({ ui, playback, disabled, selectedId, onPreview, onUse }: {
     </section>
   )
 }
-
-function usePlayback() {
-  const stateRef = useRef({ playingId: null as string | null, activeId: null as string | null, position: 0, duration: 0 })
-  const subscribe = useCallback((notify: () => void) => player.subscribe((state) => {
-    stateRef.current = state
-    notify()
-  }), [])
-  return useSyncExternalStore(subscribe, () => stateRef.current, () => stateRef.current)
-}
-
-type Playback = ReturnType<typeof usePlayback>
 
 function RecordingPanel({ ui, text, elapsed, onStop, mood }: { ui: UI; text: string; elapsed: number; onStop: () => void; mood?: Mood }) {
   const remaining = Math.ceil(MIN_SECONDS - elapsed)

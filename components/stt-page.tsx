@@ -3,9 +3,9 @@ import { ErrorBoundary } from '@/components/error-boundary'
 import { HomeArticle } from '@/components/home-article'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
+import { ToolSwitch } from '@/components/tool-switch'
 import { SttTool } from '@/components/stt-tool'
 import { HOME } from '@/content/home'
-import { CHROME } from '@/content/pages'
 import { STT } from '@/content/stt'
 import { TOOL_NAMES } from '@/content/tools'
 import { localePath, type Locale } from '@/lib/i18n'
@@ -48,8 +48,10 @@ export function SttPage({ lang }: { lang: Locale }) {
   ]
   return (
     <main className="shell shell-home">
-      <ErrorBoundary lang={lang} header={<SiteHeader lang={lang} page="voice-to-text" />}>
-        <SttTool lang={lang} ui={content.ui} languageLabel={CHROME[lang].language} />
+      <SiteHeader lang={lang} page="voice-to-text" active="stt" />
+      <ToolSwitch lang={lang} active="stt" variant="inline" />
+      <ErrorBoundary lang={lang}>
+        <SttTool lang={lang} ui={content.ui} />
       </ErrorBoundary>
       <HomeArticle content={{ ...HOME[lang], sections: content.sections, faqTitle: content.faqTitle, faq: content.faq }} title={content.headline} lede={content.lede} />
       <SiteFooter lang={lang} page="voice-to-text" />

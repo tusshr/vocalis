@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
 import { RotateCcw, SlidersHorizontal, X } from 'lucide-react'
 import { DELIVERY, emojifyTags, MOOD_EMOJI, MOODS, TAG_RE, tagLook, type Delivery, type Mood } from '@/lib/script'
 import { fmt } from '@/lib/i18n'
 import type { UI } from '@/content/ui'
 import { ScrollFade } from './scroll-fade'
+import { useMediaQuery } from '@/hooks/use-media-query'
 
 const Sheet = dynamic(() => import('./sheet'), { ssr: false })
 const PAUSES = [0.5, 1, 2, 3]
@@ -228,15 +229,6 @@ export function ScriptEditor({
       )}
     </div>
   )
-}
-
-function useMediaQuery(query: string) {
-  const subscribe = useCallback((notify: () => void) => {
-    const list = window.matchMedia(query)
-    list.addEventListener('change', notify)
-    return () => list.removeEventListener('change', notify)
-  }, [query])
-  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false)
 }
 
 /** The backdrop: the same text, with each tag (a whole "[effect: text]" span) tinted, and the spoken word marked. */

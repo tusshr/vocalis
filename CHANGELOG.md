@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The phone screen stays on while a model loads, a voice is recorded, a script is spoken or audio is transcribed (Screen Wake Lock API; browsers without it behave as before).
 
 ### Changed
+- Code: one server-rendered header for every page (tools included); tools report their activity to the live logo through a small store and put Start again into the header through a slot. Hooks moved to a root `hooks/` folder; duplicate `useMediaQuery` copies removed; unused imports now fail the type check (`noUnusedLocals`).
 - Text to voice on desktop: your generations now live in the right pane (like transcripts in voice to text) instead of under the tool; the voices open from the voice chip as a popover. Phones are unchanged (voice drawer, generations under the tool).
 - Both tools show a designed empty state in the side pane: skeleton cards shaped like a take or a transcript, a title and one line of help (5 languages).
 - The logo is alive: its bars breathe at rest, bounce while working and follow the sound while audio plays or the mic records. Still in the footer and for reduced motion.
@@ -20,9 +21,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `npm run preview` sends the same isolation headers as production (`serve.json`).
 
 ### Fixed
+- Leaving text to voice while it was generating logged "The voice engine was reset." as an error; shutting the engine down on purpose now ends the step as stopped.
 - Contact, Privacy and Terms showed addresses that could not receive mail (`hello@` / `legal@` the site's host); they now show vocalis@zerouploads.com.
 - The page no longer shifts sideways when it starts to scroll: the scrollbar's space is always reserved (`scrollbar-gutter: stable`), so short and long pages line up.
-- On About, Contact, Privacy, Terms and 404 the tool switch showed an empty track with nothing selected; there it is now two plain links.
 - The main button on the 404 page was blank in dark mode (article link color overrode the button's text color).
 - About, Contact, Privacy, Terms and 404 now use the same header as the tools (logo, tool switch, language on the same grid), so nothing jumps when you move between pages. The install button lives only in the footer, as in the design rules.
 - Switching from Voice to text back to Text to voice: the sliding pill no longer covers the "Text to voice" label mid-slide (labels now stay above the pill during the transition).

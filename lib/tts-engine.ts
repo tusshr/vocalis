@@ -129,9 +129,10 @@ export class PocketTTSEngine implements TTSEngine {
     }
   }
 
+  /** Shuts the worker down on purpose (the tool unmounts or the model is replaced): a pending step ends as stopped, not failed. */
   terminate() {
     this.worker.terminate()
-    this.fail(new Error('The voice engine was reset.'))
+    this.fail(new StoppedError())
   }
 
   private request(kind: Kind, message: unknown, onProgress?: (progress: LoadProgress) => void, transfer: Transferable[] = []) {
