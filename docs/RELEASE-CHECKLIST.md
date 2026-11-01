@@ -40,4 +40,4 @@ The owner's playbook, written as rules, with Vocalis's status on 2026-10-27. App
 | 10 | Done | Live: robots `Allow: /`, sitemap with hreflang alternates. |
 | 11 | Open | GA supported (`NEXT_PUBLIC_GA_ID`, consent banner) but no ID yet; Vercel Analytics in place meanwhile. |
 | 12 | Partial | `_headers` noindexes `*.pages.dev`; add vercel.app handling when the custom domain is live. |
-| 13 | Open | Needs the custom domain on Cloudflare; site currently shows non-working `@freevoiceclone.vercel.app` addresses. |
+| 13 | Partial | Site shows vocalis@zerouploads.com (Cloudflare Email Routing on the owner's domain; owner adds the forwarding rule). Move to an address on the product domain once bought. |

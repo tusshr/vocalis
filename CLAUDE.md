@@ -52,7 +52,7 @@ Next.js 16 (App Router, Turbopack) with `output: 'export'` — a fully static si
 | Shared UI pieces | `components/logo-mark.tsx` (live logo; tools pass their wave mode), `components/empty-pane.tsx` (skeleton empty state for side panes), `lib/use-dismiss.ts` (outside click / Escape for menus and popovers), `lib/use-media-query.ts` (false on the server) |
 | Styles | `app/globals.css` (one file, CSS variables; Tailwind is imported but barely used) |
 
-Environment variables (set in Vercel → production): `NEXT_PUBLIC_SITE_URL=https://freevoiceclone.vercel.app`, `NEXT_PUBLIC_INDEXABLE=true`. Not set yet: `NEXT_PUBLIC_GA_ID`, `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_LEGAL_EMAIL`.
+Environment variables (set in Vercel → production): `NEXT_PUBLIC_SITE_URL=https://freevoiceclone.vercel.app`, `NEXT_PUBLIC_INDEXABLE=true`. Not set yet: `NEXT_PUBLIC_GA_ID`. Contact and legal email default to `vocalis@zerouploads.com` in `lib/site.ts` (Cloudflare Email Routing → owner's inbox); `NEXT_PUBLIC_CONTACT_EMAIL` / `NEXT_PUBLIC_LEGAL_EMAIL` override it.
 
 ## Working rules (from the owner)
 

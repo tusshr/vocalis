@@ -20,6 +20,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `npm run preview` sends the same isolation headers as production (`serve.json`).
 
 ### Fixed
+- Contact, Privacy and Terms showed addresses that could not receive mail (`hello@` / `legal@` the site's host); they now show vocalis@zerouploads.com.
 - The page no longer shifts sideways when it starts to scroll: the scrollbar's space is always reserved (`scrollbar-gutter: stable`), so short and long pages line up.
 - On About, Contact, Privacy, Terms and 404 the tool switch showed an empty track with nothing selected; there it is now two plain links.
 - The main button on the 404 page was blank in dark mode (article link color overrode the button's text color).
