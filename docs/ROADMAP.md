@@ -9,7 +9,7 @@ Ordered. Start a session by reading this, then remind the owner where we are. Ti
 - [ ] **Domain decision (2026-11-01)**: zerouploads.com is the owner's live site (60 free in-browser tools, no account, no limits). Best for organic traffic: Vocalis under a **subfolder** of zerouploads.com (shares its authority and internal links; Cloudflare Worker route or merge). Subdomain (vocalis.zerouploads.com) is weaker (Google treats it mostly as a separate site). A new keyword .com starts from zero. Leave vercel.app either way (Hobby is non-commercial; no Domain property in Search Console).
 - [ ] **Domain (earlier notes)**: do the SERP review for "text to voice" (pages 1–3: keyword domains? irrelevant results? Reddit/Quora on page 1?). Candidates that were available on 2026-10-27: **texttovoicefree.com** (recommended: "text to voice free" >1,000 and "free text to voice" >1,000), **texttovoiceapp.com** (only Easy keyword), voicetotextfree.com, voiceclonetool.com, clonevoicefree.com, voicestudiofree.com. Taken: freevoiceclone.com, freetexttovoice.com, texttovoiceai.com, aitexttovoice.com, texttovoicegenerator.com, texttovoiceonline.com, voiceclonefree.com, freevoicetotext.com.
 - [ ] Give Claude: the GA4 Measurement ID (`G-…`), Ahrefs keyword + questions exports for es / pt / de / it, the chosen domain.
-- [ ] Revoke old GitHub tokens that were pasted in chats; keep one fine-grained token with Contents read/write for `tusshr/voicecloner`.
+- [ ] Revoke old GitHub tokens that were pasted in chats; keep one fine-grained token with Contents read/write for `tusshr/vocalis`.
 
 ## 0b. Architecture (owner asked 2026-11-01: clean, server-first, composite components, PageSpeed 100)
 
