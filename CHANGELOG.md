@@ -5,6 +5,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Changed
+- Text to voice page loads ~10 KB less JavaScript (gzipped): the voice tool now receives only the example script and read-aloud texts for each speech language from the server, instead of bundling every UI string in all 5 languages. Found with `next analyze` (Next.js 16.4 bundle analyzer).
+
 ## [1.2.0] - 2026-11-01
 
 ### Added

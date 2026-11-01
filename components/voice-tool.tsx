@@ -16,7 +16,6 @@ import { canRecord, isLowPowerDevice, isSupported, StoppedError } from '@/lib/tt
 import { jobs } from '@/lib/jobs'
 import { session, setBase, setBusy, setConsent, setGenError, setLoadProgress, setModel, setModelError, setMoods, setStopped, setTakes, studio, type Clip, type Piece, type Take } from '@/lib/tts-studio'
 import { ENGINE_LANGUAGE, fmt, formatTime, isLocale, timeAgo, type Locale } from '@/lib/i18n'
-import { UI_STRINGS } from '@/content/ui'
 import { PRESETS, type Preset } from '@/lib/voices'
 import { usePublishActivity } from '@/hooks/use-activity'
 import { useDismiss } from '@/hooks/use-dismiss'
@@ -24,7 +23,7 @@ import { usePlayback, type Playback } from '@/hooks/use-playback'
 import { useTtsStudio } from '@/hooks/use-tts-studio'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useWakeLock } from '@/hooks/use-wake-lock'
-import type { UI } from '@/content/ui'
+import type { SpeechText, UI } from '@/content/ui'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
 import { EmptyPane } from '@/components/empty-pane'
 
@@ -48,7 +47,7 @@ function friendlyError(error: unknown, ui: UI) {
 const seconds = (audio: Float32Array) => audio.length / SAMPLE_RATE
 const presetLabel = (preset: Preset, ui: UI) => `${preset.name}, ${ui.styles[preset.style]}`
 
-export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
+export function VoiceTool({ ui, lang, speech }: { ui: UI; lang: Locale; speech: Record<Locale, SpeechText> }) {
   const [env, setEnv] = useState({ supported: true, recordable: true, lowPower: false })
 
   // Voice, model, job and takes live in the studio store, so they survive moving to another page and back.
@@ -61,7 +60,7 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
 
   // The language the voice speaks. It starts as the page language, and people can change it (the choice is kept per page language).
   const [speechLang, setSpeechLang] = useState<Locale>(lang)
-  const speechUi = UI_STRINGS[speechLang]
+  const speechUi = speech[speechLang]
   const [script, setScript] = useState(ui.defaultScript)
   const [hydrated, setHydrated] = useState(false)
   const scriptKey = `script:${lang}`
@@ -72,16 +71,16 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
     try { saved = localStorage.getItem(scriptKey); savedLang = localStorage.getItem(speechKey) } catch {}
     const next = savedLang && isLocale(savedLang) ? savedLang : lang
     setSpeechLang(next)
-    setScript(saved ?? UI_STRINGS[next].defaultScript)
+    setScript(saved ?? speech[next].defaultScript)
     setHydrated(true)
-  }, [scriptKey, speechKey, lang])
+  }, [scriptKey, speechKey, lang, speech])
   useEffect(() => {
     if (!hydrated) return
     try {
-      if (script === UI_STRINGS[speechLang].defaultScript) localStorage.removeItem(scriptKey); else localStorage.setItem(scriptKey, script)
+      if (script === speech[speechLang].defaultScript) localStorage.removeItem(scriptKey); else localStorage.setItem(scriptKey, script)
       if (speechLang === lang) localStorage.removeItem(speechKey); else localStorage.setItem(speechKey, speechLang)
     } catch {}
-  }, [hydrated, script, scriptKey, speechLang, speechKey, lang])
+  }, [hydrated, script, scriptKey, speechLang, speechKey, lang, speech])
   // Voice panel: sample voices in one tab, your own voice (and its moods) in the other. On phones it is a drawer.
   const [voiceTab, setVoiceTab] = useState<'voices' | 'mine'>('voices')
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -340,7 +339,7 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
   const changeSpeechLang = (next: Locale) => {
     if (busy || next === speechLang) return
     // Swap the example script, but never replace text the person typed.
-    if (script === UI_STRINGS[speechLang].defaultScript) setScript(UI_STRINGS[next].defaultScript)
+    if (script === speech[speechLang].defaultScript) setScript(speech[next].defaultScript)
     setSpeechLang(next)
     setGenError(null)
     if (playback.playingId?.startsWith('preset-')) player.stop()

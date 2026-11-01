@@ -6,7 +6,7 @@ import { SiteHeader } from '@/components/site-header'
 import { ToolSwitch } from '@/components/tool-switch'
 import { VoiceTool } from '@/components/voice-tool'
 import { HOME } from '@/content/home'
-import { UI_STRINGS } from '@/content/ui'
+import { SPEECH_TEXT, UI_STRINGS } from '@/content/ui'
 import { localePath, type Locale } from '@/lib/i18n'
 import { pageMetadata } from '@/lib/seo'
 import { SITE_NAME, SITE_URL } from '@/lib/site'
@@ -64,7 +64,7 @@ export function HomePage({ lang }: { lang: Locale }) {
       <SiteHeader lang={lang} active="tts" />
       <ToolSwitch lang={lang} active="tts" variant="inline" />
       <ErrorBoundary lang={lang}>
-        <VoiceTool ui={UI_STRINGS[lang]} lang={lang} />
+        <VoiceTool ui={UI_STRINGS[lang]} lang={lang} speech={SPEECH_TEXT} />
       </ErrorBoundary>
       <HomeArticle content={content} title={UI_STRINGS[lang].headline} lede={UI_STRINGS[lang].subhead} />
       <SiteFooter lang={lang} />

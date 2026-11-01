@@ -569,3 +569,10 @@ const it: UI = {
 }
 
 export const UI_STRINGS: Record<Locale, UI> = { en, es, pt, de, it }
+
+// The only text the voice tool needs in every language (the voice can speak a language other than the page's).
+// Passed as a prop so the client bundle does not ship all of UI_STRINGS.
+export type SpeechText = Pick<UI, 'defaultScript' | 'readAloud'>
+export const SPEECH_TEXT = Object.fromEntries(
+  Object.entries(UI_STRINGS).map(([lang, { defaultScript, readAloud }]) => [lang, { defaultScript, readAloud }]),
+) as Record<Locale, SpeechText>
