@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Copy, Download, FileText, Mic, Play, Plus, Square, Upload, Volume2, X } from 'lucide-react'
+import { Check, ChevronDown, Copy, Download, FileText, Mic, Play, Plus, Square, Upload, Volume2, X } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
 import { ScrollFade } from '@/components/scroll-fade'
@@ -16,7 +16,7 @@ import { attachMic, detachMic, formatTime } from '@/lib/audio-stage'
 import { fmt, localePath, timeAgo, type Locale } from '@/lib/i18n'
 import { SITE_NAME } from '@/lib/site'
 import { useWakeLock } from '@/lib/wake-lock'
-import { decodeTo16k, engineFor, getSttEngine, resampleTo16k, STT_RATE, sttSupported, toSrt, type SttChunk } from '@/lib/stt-engine'
+import { decodeTo16k, engineFor, getSttEngine, resampleTo16k, STT_RATE, sttSupported, toSrt, type SttChunk, type SttEngineKind } from '@/lib/stt-engine'
 
 type Entry = { id: string; text: string; chunks: SttChunk[]; seconds: number; at: number }
 type Phase = 'idle' | 'recording' | 'finishing' | 'transcribing'
@@ -73,10 +73,9 @@ export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttCont
   // Each engine loads on first use; a new engine (other language or the visitor's choice) starts from 'idle'.
   const kind = engineFor(speechLang, preferWhisper)
   useEffect(() => { setModel('idle'); setProgress(undefined) }, [kind])
-  const switchEngine = () => {
-    const next = !preferWhisper
-    setPreferWhisper(next)
-    try { if (next) localStorage.setItem(ENGINE_KEY, 'whisper'); else localStorage.removeItem(ENGINE_KEY) } catch {}
+  const pickEngine = (whisper: boolean) => {
+    setPreferWhisper(whisper)
+    try { if (whisper) localStorage.setItem(ENGINE_KEY, 'whisper'); else localStorage.removeItem(ENGINE_KEY) } catch {}
   }
 
   const ensureModel = useCallback(async () => {
@@ -347,11 +346,12 @@ export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttCont
           </div>
 
           <div className="pane-foot">
-            <div className="voice-chip stt-status">
+            <ModelChip ui={ui} kind={kind} canPick={speechLang !== 'pt'} disabled={phase !== 'idle'} onPick={(next) => pickEngine(next === 'whisper')}>
               {phase === 'recording'
                 ? <><span className="rec-dot" /> <span className="voice-chip-text">{ui.listening} · {formatTime(elapsed)}</span></>
-                : <><span className="chip-icon"><Mic size={14} /></span><span className="voice-chip-text">{working ? ui.transcribing : ui.microphone}</span></>}
-            </div>
+                : working ? <><span className="chip-icon"><Mic size={14} /></span><span className="voice-chip-text">{ui.transcribing}</span></>
+                : null}
+            </ModelChip>
             <button className={`action-btn ${action.working ? 'is-working' : ''} ${ring}`} data-state={action.working ? 'busy' : 'idle'}
               style={ringValue !== undefined ? ({ '--p': ringValue } as React.CSSProperties) : undefined}
               onClick={action.onClick} disabled={action.disabled}>
@@ -381,12 +381,52 @@ export function SttTool({ lang, ui, languageLabel }: { lang: Locale; ui: SttCont
           </div>
         </aside>
       </div>
-      {/* Outside the workspace, so both tools keep the same workbench height. */}
-      <p className="note stt-model">
-        {kind === 'whistle' ? ui.modelWhistle : ui.modelWhisper}
-        {speechLang !== 'pt' && <> · <button type="button" className="link" onClick={switchEngine} disabled={phase !== 'idle'}>
-          {kind === 'whistle' ? ui.useWhisper : ui.useWhistle}</button></>}
-      </p>
+    </div>
+  )
+}
+
+/** Bottom-left chip, where text to voice has its voice: shows the speech model and opens a menu to pick it. While busy it shows the status instead. */
+function ModelChip({ ui, kind, canPick, disabled, onPick, children }: {
+  ui: SttContent['ui']; kind: SttEngineKind; canPick: boolean; disabled: boolean; onPick: (kind: SttEngineKind) => void; children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDown = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false) }
+    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('pointerdown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => { document.removeEventListener('pointerdown', onDown); document.removeEventListener('keydown', onKey) }
+  }, [open])
+  useEffect(() => { if (disabled) setOpen(false) }, [disabled])
+  const options = [
+    { kind: 'whistle' as const, name: 'Whistle', tag: ui.beta, note: ui.whistleNote },
+    { kind: 'whisper' as const, name: 'Whisper', tag: '', note: ui.whisperNote },
+  ]
+  const current = options.find((option) => option.kind === kind)!
+  return (
+    <div ref={ref} className="menu model-menu">
+      <button type="button" className="voice-chip stt-status" disabled={!canPick || disabled} aria-haspopup="menu" aria-expanded={open}
+        aria-label={`${ui.speechModel}: ${current.name}`} title={`${ui.speechModel}: ${current.name}`} onClick={() => setOpen(!open)}>
+        {children ?? <>
+          <span className="chip-icon"><Mic size={14} /></span>
+          <span className="voice-chip-text">{current.name}</span>
+          {canPick && <ChevronDown size={14} className="model-caret" aria-hidden />}
+        </>}
+      </button>
+      {open && (
+        <div className="menu-list" role="menu" aria-label={ui.speechModel}>
+          <p className="menu-title">{ui.speechModel}</p>
+          {options.map((option) => (
+            <button key={option.kind} type="button" role="menuitemradio" aria-checked={option.kind === kind} className="menu-item menu-item-2"
+              onClick={() => { setOpen(false); onPick(option.kind) }}>
+              <span className="menu-check">{option.kind === kind && <Check size={16} />}</span>
+              <span><span className="menu-item-name">{option.name}{option.tag && <span className="menu-tag">{option.tag}</span>}</span><span className="menu-item-note">{option.note}</span></span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -8,10 +8,10 @@ export type SttContent = {
   lede: string
   ui: {
     placeholder: string; record: string; recordMore: string; stop: string
-    microphone: string; listening: string; loading: string; finishing: string; transcribing: string
+    listening: string; loading: string; finishing: string; transcribing: string
     copy: string; copied: string; readAloud: string; downloadTxt: string; downloadSrt: string; moreActions: string
     words: string; transcripts: string; emptyHistory: string; justNow: string; remove: string; open: string
-    speechLanguage: string; modelWhistle: string; modelWhisper: string; useWhisper: string; useWhistle: string
+    speechLanguage: string; speechModel: string; beta: string; whistleNote: string; whisperNote: string
     noMic: string; failed: string; unsupported: string; newTranscript: string
   }
   sections: { h: string; p: string[] }[]
@@ -27,11 +27,11 @@ const en: SttContent = {
   ui: {
     placeholder: 'Tap Record and start speaking…',
     record: 'Record', recordMore: 'Record more', stop: 'Stop',
-    microphone: 'Microphone', listening: 'Listening', loading: 'Loading', finishing: 'Finishing', transcribing: 'Transcribing',
+    listening: 'Listening', loading: 'Loading', finishing: 'Finishing', transcribing: 'Transcribing',
     copy: 'Copy', copied: 'Copied', readAloud: 'Read aloud', downloadTxt: 'Download text (.txt)', downloadSrt: 'Download subtitles (.srt)', moreActions: 'More actions',
     words: '{n} words', transcripts: 'Your transcripts', emptyHistory: 'Your transcripts appear here.', justNow: 'Just now', remove: 'Remove', open: 'Open',
     speechLanguage: 'Speech language',
-    modelWhistle: 'Speech model: Whistle (beta, faster)', modelWhisper: 'Speech model: Whisper', useWhisper: 'Use Whisper instead', useWhistle: 'Try Whistle (beta)',
+    speechModel: 'Speech model', beta: 'beta', whistleNote: 'Faster, smaller download (18 MB)', whisperNote: 'Slower, bigger download (77 MB), longer tested',
     noMic: 'The microphone is not available. Allow it in the browser, or upload a recording.',
     failed: 'The transcription failed: {error}',
     unsupported: 'This browser cannot run the speech model. Try a recent Chrome, Edge, Firefox or Safari.',
@@ -72,11 +72,11 @@ const es: SttContent = {
   ui: {
     placeholder: 'Pulsa Grabar y empieza a hablar…',
     record: 'Grabar', recordMore: 'Grabar más', stop: 'Parar',
-    microphone: 'Micrófono', listening: 'Escuchando', loading: 'Cargando', finishing: 'Terminando', transcribing: 'Transcribiendo',
+    listening: 'Escuchando', loading: 'Cargando', finishing: 'Terminando', transcribing: 'Transcribiendo',
     copy: 'Copiar', copied: 'Copiado', readAloud: 'Leer en voz alta', downloadTxt: 'Descargar texto (.txt)', downloadSrt: 'Descargar subtítulos (.srt)', moreActions: 'Más acciones',
     words: '{n} palabras', transcripts: 'Tus transcripciones', emptyHistory: 'Tus transcripciones aparecen aquí.', justNow: 'Ahora mismo', remove: 'Quitar', open: 'Abrir',
     speechLanguage: 'Idioma de la voz',
-    modelWhistle: 'Modelo de voz: Whistle (beta, más rápido)', modelWhisper: 'Modelo de voz: Whisper', useWhisper: 'Usar Whisper', useWhistle: 'Probar Whistle (beta)',
+    speechModel: 'Modelo de voz', beta: 'beta', whistleNote: 'Más rápido, descarga más pequeña (18 MB)', whisperNote: 'Más lento, descarga mayor (77 MB), más probado',
     noMic: 'El micrófono no está disponible. Permítelo en el navegador o sube una grabación.',
     failed: 'La transcripción falló: {error}',
     unsupported: 'Este navegador no puede ejecutar el modelo de voz. Prueba un Chrome, Edge, Firefox o Safari reciente.',
@@ -117,11 +117,11 @@ const pt: SttContent = {
   ui: {
     placeholder: 'Toque em Gravar e comece a falar…',
     record: 'Gravar', recordMore: 'Gravar mais', stop: 'Parar',
-    microphone: 'Microfone', listening: 'Ouvindo', loading: 'Carregando', finishing: 'Finalizando', transcribing: 'Transcrevendo',
+    listening: 'Ouvindo', loading: 'Carregando', finishing: 'Finalizando', transcribing: 'Transcrevendo',
     copy: 'Copiar', copied: 'Copiado', readAloud: 'Ler em voz alta', downloadTxt: 'Baixar texto (.txt)', downloadSrt: 'Baixar legendas (.srt)', moreActions: 'Mais ações',
     words: '{n} palavras', transcripts: 'Suas transcrições', emptyHistory: 'Suas transcrições aparecem aqui.', justNow: 'Agora mesmo', remove: 'Remover', open: 'Abrir',
     speechLanguage: 'Idioma da fala',
-    modelWhistle: 'Modelo de fala: Whistle (beta, mais rápido)', modelWhisper: 'Modelo de fala: Whisper', useWhisper: 'Usar o Whisper', useWhistle: 'Experimentar o Whistle (beta)',
+    speechModel: 'Modelo de fala', beta: 'beta', whistleNote: 'Mais rápido, download menor (18 MB)', whisperNote: 'Mais lento, download maior (77 MB), mais testado',
     noMic: 'O microfone não está disponível. Permita no navegador ou envie uma gravação.',
     failed: 'A transcrição falhou: {error}',
     unsupported: 'Este navegador não consegue rodar o modelo de voz. Tente um Chrome, Edge, Firefox ou Safari recente.',
@@ -162,11 +162,11 @@ const de: SttContent = {
   ui: {
     placeholder: 'Tippe auf Aufnehmen und sprich los…',
     record: 'Aufnehmen', recordMore: 'Weiter aufnehmen', stop: 'Stopp',
-    microphone: 'Mikrofon', listening: 'Hört zu', loading: 'Lädt', finishing: 'Wird fertig', transcribing: 'Transkribiert',
+    listening: 'Hört zu', loading: 'Lädt', finishing: 'Wird fertig', transcribing: 'Transkribiert',
     copy: 'Kopieren', copied: 'Kopiert', readAloud: 'Vorlesen', downloadTxt: 'Text herunterladen (.txt)', downloadSrt: 'Untertitel herunterladen (.srt)', moreActions: 'Weitere Aktionen',
     words: '{n} Wörter', transcripts: 'Deine Transkripte', emptyHistory: 'Deine Transkripte erscheinen hier.', justNow: 'Gerade eben', remove: 'Entfernen', open: 'Öffnen',
     speechLanguage: 'Sprache der Aufnahme',
-    modelWhistle: 'Spracherkennung: Whistle (Beta, schneller)', modelWhisper: 'Spracherkennung: Whisper', useWhisper: 'Whisper verwenden', useWhistle: 'Whistle testen (Beta)',
+    speechModel: 'Spracherkennung', beta: 'Beta', whistleNote: 'Schneller, kleinerer Download (18 MB)', whisperNote: 'Langsamer, größerer Download (77 MB), länger erprobt',
     noMic: 'Das Mikrofon ist nicht verfügbar. Erlaube es im Browser oder lade eine Aufnahme hoch.',
     failed: 'Die Transkription ist fehlgeschlagen: {error}',
     unsupported: 'Dieser Browser kann das Sprachmodell nicht ausführen. Versuche ein aktuelles Chrome, Edge, Firefox oder Safari.',
@@ -207,11 +207,11 @@ const it: SttContent = {
   ui: {
     placeholder: 'Tocca Registra e inizia a parlare…',
     record: 'Registra', recordMore: 'Registra ancora', stop: 'Stop',
-    microphone: 'Microfono', listening: 'In ascolto', loading: 'Caricamento', finishing: 'Quasi fatto', transcribing: 'Trascrizione',
+    listening: 'In ascolto', loading: 'Caricamento', finishing: 'Quasi fatto', transcribing: 'Trascrizione',
     copy: 'Copia', copied: 'Copiato', readAloud: 'Leggi ad alta voce', downloadTxt: 'Scarica testo (.txt)', downloadSrt: 'Scarica sottotitoli (.srt)', moreActions: 'Altre azioni',
     words: '{n} parole', transcripts: 'Le tue trascrizioni', emptyHistory: 'Le tue trascrizioni appaiono qui.', justNow: 'Proprio ora', remove: 'Rimuovi', open: 'Apri',
     speechLanguage: 'Lingua del parlato',
-    modelWhistle: 'Modello vocale: Whistle (beta, più veloce)', modelWhisper: 'Modello vocale: Whisper', useWhisper: 'Usa Whisper', useWhistle: 'Prova Whistle (beta)',
+    speechModel: 'Modello vocale', beta: 'beta', whistleNote: 'Più veloce, download più piccolo (18 MB)', whisperNote: 'Più lento, download più grande (77 MB), più collaudato',
     noMic: 'Il microfono non è disponibile. Consentilo nel browser o carica una registrazione.',
     failed: 'La trascrizione non è riuscita: {error}',
     unsupported: 'Questo browser non può eseguire il modello vocale. Prova un Chrome, Edge, Firefox o Safari recente.',

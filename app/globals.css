@@ -629,9 +629,24 @@ html, body { overflow-x: clip; }
 .stt-text.is-live { white-space: pre-wrap; }
 .stt-pending { color: var(--muted); }
 .stt-caret { display: inline-block; width: 2px; height: 1.1em; margin-left: 2px; vertical-align: -0.15em; background: var(--accent); }
-.stt-model { margin: 12px 0 0; text-align: center; }
-.stt-model .link { padding: 0; border: 0; background: none; font: inherit; cursor: pointer; }
-.stt-model .link:disabled { cursor: default; opacity: 0.5; }
+/* Speech model picker: the chip where text to voice has its voice, with a menu above it. */
+.model-menu { min-width: 0; }
+.model-menu .voice-chip:disabled { cursor: default; }
+.model-menu .voice-chip:disabled:hover { background: none; color: var(--body); }
+.model-caret { color: var(--muted); flex: none; }
+.model-menu .menu-list { left: 0; right: auto; min-width: 280px; }
+.menu-title { padding: 8px 12px 4px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.menu-item-2 { height: auto; min-height: 52px; padding: 8px 12px 8px 8px; align-items: flex-start; white-space: normal; }
+.menu-check { width: 20px; flex: none; display: inline-flex; justify-content: center; padding-top: 2px; color: var(--accent-ink); }
+.menu-item-name { display: block; font-weight: 500; }
+.menu-tag { margin-left: 6px; padding: 1px 6px; border-radius: 999px; background: var(--subtle); font-size: 11px; font-weight: 500; color: var(--body); }
+.menu-item-note { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+@media (max-width: 1023px) {
+  .model-menu { flex: 1; display: flex; }
+  .model-menu .voice-chip { flex: 1; }
+  .model-menu .voice-chip:disabled:hover { background: var(--raised); color: var(--ink); }
+  .menu-item-2 { height: auto; }
+}
 @media (prefers-reduced-motion: no-preference) { .stt-caret { animation: pulse 1s steps(2) infinite; } }
 .stage-rec { position: absolute; top: 10px; left: 12px; z-index: 1; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
 .stage.is-recording .stage-wave { color: var(--ink); }
