@@ -19,6 +19,7 @@ import { canRecord, createEngine, isLowPowerDevice, isSupported, StoppedError, t
 import { ENGINE_LANGUAGE, fmt, isLocale, timeAgo, type Locale } from '@/lib/i18n'
 import { UI_STRINGS } from '@/content/ui'
 import { PRESETS, type Preset } from '@/lib/voices'
+import { useMediaQuery } from '@/lib/use-media-query'
 import { useWakeLock } from '@/lib/wake-lock'
 import type { UI } from '@/content/ui'
 import { SITE_NAME } from '@/lib/site'
@@ -889,14 +890,6 @@ function wavePeaks(audio: Float32Array, count: number) {
   return peaks.map((peak) => Math.pow(peak / max, 0.7))
 }
 
-function useMediaQuery(query: string) {
-  const subscribe = useCallback((notify: () => void) => {
-    const list = window.matchMedia(query)
-    list.addEventListener('change', notify)
-    return () => list.removeEventListener('change', notify)
-  }, [query])
-  return useSyncExternalStore(subscribe, () => window.matchMedia(query).matches, () => false)
-}
 
 
 /** A small "more" menu for a take (share, download); more export formats go here later. */

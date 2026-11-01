@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Check, ChevronDown, Copy, Download, FileText, Mic, Play, Plus, Square, Upload, Volume2, X } from 'lucide-react'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -15,11 +16,13 @@ import { TOOL_NAMES } from '@/content/tools'
 import { attachMic, detachMic, formatTime } from '@/lib/audio-stage'
 import { fmt, localePath, timeAgo, type Locale } from '@/lib/i18n'
 import { SITE_NAME } from '@/lib/site'
+import { useMediaQuery } from '@/lib/use-media-query'
 import { useWakeLock } from '@/lib/wake-lock'
 import { decodeTo16k, engineFor, getSttEngine, resampleTo16k, STT_RATE, sttSupported, toSrt, type SttChunk, type SttEngineKind } from '@/lib/stt-engine'
 
 type Entry = { id: string; text: string; chunks: SttChunk[]; seconds: number; at: number }
 type Phase = 'idle' | 'recording' | 'finishing' | 'transcribing'
+const Sheet = dynamic(() => import('./sheet'), { ssr: false })
 const HISTORY_KEY = 'stt-history'
 const ENGINE_KEY = 'stt-engine' // 'whisper' when the visitor switched away from the Whistle beta
 const SEGMENT_SECONDS = 24 // Whisper hears 30 s at a time; a recording is split into parts a bit shorter than that
@@ -390,24 +393,32 @@ function ModelChip({ ui, kind, canPick, disabled, onPick, children }: {
   ui: SttContent['ui']; kind: SttEngineKind; canPick: boolean; disabled: boolean; onPick: (kind: SttEngineKind) => void; children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
+  const isPhone = useMediaQuery('(max-width: 1023px)')
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (!open) return
+    if (!open || isPhone) return
     const onDown = (event: PointerEvent) => { if (!ref.current?.contains(event.target as Node)) setOpen(false) }
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') setOpen(false) }
     document.addEventListener('pointerdown', onDown)
     document.addEventListener('keydown', onKey)
     return () => { document.removeEventListener('pointerdown', onDown); document.removeEventListener('keydown', onKey) }
-  }, [open])
+  }, [open, isPhone])
   useEffect(() => { if (disabled) setOpen(false) }, [disabled])
   const options = [
     { kind: 'whistle' as const, name: 'Whistle', tag: ui.beta, note: ui.whistleNote },
     { kind: 'whisper' as const, name: 'Whisper', tag: '', note: ui.whisperNote },
   ]
   const current = options.find((option) => option.kind === kind)!
+  const items = (role: 'radio' | 'menuitemradio') => options.map((option) => (
+    <button key={option.kind} type="button" role={role} aria-checked={option.kind === kind} className="menu-item menu-item-2"
+      onClick={() => { setOpen(false); onPick(option.kind) }}>
+      <span className="menu-check">{option.kind === kind && <Check size={16} />}</span>
+      <span><span className="menu-item-name">{option.name}{option.tag && <span className="menu-tag">{option.tag}</span>}</span><span className="menu-item-note">{option.note}</span></span>
+    </button>
+  ))
   return (
     <div ref={ref} className="menu model-menu">
-      <button type="button" className="voice-chip stt-status" disabled={!canPick || disabled} aria-haspopup="menu" aria-expanded={open}
+      <button type="button" className="voice-chip stt-status" disabled={!canPick || disabled} aria-haspopup={isPhone ? 'dialog' : 'menu'} aria-expanded={open}
         aria-label={`${ui.speechModel}: ${current.name}`} title={`${ui.speechModel}: ${current.name}`} onClick={() => setOpen(!open)}>
         {children ?? <>
           <span className="chip-icon"><Mic size={14} /></span>
@@ -415,18 +426,12 @@ function ModelChip({ ui, kind, canPick, disabled, onPick, children }: {
           {canPick && <ChevronDown size={14} className="model-caret" aria-hidden />}
         </>}
       </button>
-      {open && (
-        <div className="menu-list" role="menu" aria-label={ui.speechModel}>
-          <p className="menu-title">{ui.speechModel}</p>
-          {options.map((option) => (
-            <button key={option.kind} type="button" role="menuitemradio" aria-checked={option.kind === kind} className="menu-item menu-item-2"
-              onClick={() => { setOpen(false); onPick(option.kind) }}>
-              <span className="menu-check">{option.kind === kind && <Check size={16} />}</span>
-              <span><span className="menu-item-name">{option.name}{option.tag && <span className="menu-tag">{option.tag}</span>}</span><span className="menu-item-note">{option.note}</span></span>
-            </button>
-          ))}
-        </div>
-      )}
+      {/* Phones: a drawer like the voice drawer in text to voice; desktop: a popover above the chip. */}
+      {isPhone
+        ? <Sheet open={open} onOpenChange={setOpen} title={ui.speechModel} done={ui.done} className="sheet-short">
+            <div className="sheet-options" role="radiogroup" aria-label={ui.speechModel}>{items('radio')}</div>
+          </Sheet>
+        : open && <div className="menu-list" role="menu" aria-label={ui.speechModel}><p className="menu-title">{ui.speechModel}</p>{items('menuitemradio')}</div>}
     </div>
   )
 }
