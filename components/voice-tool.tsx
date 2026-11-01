@@ -28,7 +28,7 @@ import type { UI } from '@/content/ui'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
 import { EmptyPane } from '@/components/empty-pane'
 import { HeaderActions } from '@/components/header-actions'
-import { JobNote } from '@/components/job-note'
+import { JobStatus } from '@/components/job-status'
 
 const Sheet = dynamic(() => import('./sheet'), { ssr: false })
 const MIN_SECONDS = 5
@@ -633,7 +633,6 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
             {genError && <p className="note is-error" role="alert">{fmt(ui.genFailed, { error: genError })}</p>}
             {consentMissing && <p className="note is-warn">{ui.consentNeeded}</p>}
             {stopped && !busy && <p className="note">{ui.stopped}</p>}
-            {busy?.long && <JobNote lang={lang} secondsLeft={busy.secondsLeft} />}
           </div>
 
           <div className="pane-body">
@@ -653,21 +652,23 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
           </div>
 
           <div className="pane-foot">
-            {/* Voice chip: opens the voice drawer on phones, a popover above it on desktop. */}
-            <div ref={voiceAnchorRef} className="voice-anchor">
-              <button className="voice-chip" title={voiceSummary} aria-label={`${ui.stepVoice}: ${voiceSummary}`}
-                aria-haspopup="dialog" aria-expanded={sheetOpen}
-                onClick={() => sheetOpen ? onSheetChange(false) : openVoices(base && base.source !== 'preset' ? 'mine' : voiceTab)}>
-                <span className={`dot tone-${Math.max(0, PRESETS.findIndex((preset) => preset.id === (base?.preset?.id ?? PRESETS[0].id))) % 4}${ownClip ? ' is-own' : ''}`} aria-hidden />
-                <span className="voice-chip-text">{voiceSummary}</span>
-                <ChevronDown size={14} className="voice-chip-caret" aria-hidden />
-              </button>
-              {!isPhone && sheetOpen && (
-                <div ref={voicePopoverRef} className="voice-popover" role="dialog" aria-label={ui.stepVoice} tabIndex={-1}>
-                  {voicePanel}
-                </div>
-              )}
-            </div>
+            {/* Voice chip: opens the voice drawer on phones, a popover above it on desktop. A long job shows its status here instead. */}
+            {busy?.long ? <JobStatus lang={lang} progress={busy.progress} secondsLeft={busy.secondsLeft} /> : (
+              <div ref={voiceAnchorRef} className="voice-anchor">
+                <button className="voice-chip" title={voiceSummary} aria-label={`${ui.stepVoice}: ${voiceSummary}`}
+                  aria-haspopup="dialog" aria-expanded={sheetOpen}
+                  onClick={() => sheetOpen ? onSheetChange(false) : openVoices(base && base.source !== 'preset' ? 'mine' : voiceTab)}>
+                  <span className={`dot tone-${Math.max(0, PRESETS.findIndex((preset) => preset.id === (base?.preset?.id ?? PRESETS[0].id))) % 4}${ownClip ? ' is-own' : ''}`} aria-hidden />
+                  <span className="voice-chip-text">{voiceSummary}</span>
+                  <ChevronDown size={14} className="voice-chip-caret" aria-hidden />
+                </button>
+                {!isPhone && sheetOpen && (
+                  <div ref={voicePopoverRef} className="voice-popover" role="dialog" aria-label={ui.stepVoice} tabIndex={-1}>
+                    {voicePanel}
+                  </div>
+                )}
+              </div>
+            )}
             {/* One button, one size: the label changes and a ring runs round the border, but the width never does. */}
             {(() => {
               const loading = !busy && model !== 'failed' && !!modelLabel

@@ -765,9 +765,17 @@ html, body { overflow-x: clip; }
   background: conic-gradient(var(--accent) calc(var(--p, 0) * 360deg), var(--hairline-strong) 0);
   mask: radial-gradient(circle, transparent 4px, #000 4.5px);
 }
-.job-note strong { color: var(--ink); font-weight: 600; }
-.job-note-line { display: flex; align-items: center; gap: 5px; margin-top: 4px; }
-.job-note button.job-note-line { padding: 0; border: 0; background: none; font: inherit; color: var(--accent-ink); font-weight: 500; cursor: pointer; }
+.job-status, .job-status:hover { cursor: default; background: none; color: var(--body); }
+.job-status-hint { color: var(--muted); }
+.job-status-short { display: none; }
+.job-bell { width: 28px; height: 28px; flex: none; }
+.job-bell.is-on { color: var(--accent-ink); }
+@media (max-width: 1023px) {
+  .job-status, .job-status:hover { background: var(--raised); color: var(--ink); }
+  .job-status-hint, .job-status-long { display: none; }
+  .job-status-short { display: inline; }
+  .job-bell { margin-left: auto; width: 32px; height: 32px; }
+}
 
 .job-toast {
   position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); width: min(420px, calc(100% - 24px));
