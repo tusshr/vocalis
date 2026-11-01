@@ -71,7 +71,7 @@ Environment variables (set in Vercel → production): `NEXT_PUBLIC_SITE_URL=http
 - Headless Chromium via Playwright (Python) against `out/` served on port 4000 (`npm run preview`).
 - Fake microphone: launch with `--use-fake-ui-for-media-stream --use-fake-device-for-media-stream` and grant `microphone`. Add `--use-file-for-fake-audio-capture=<file.wav>` to make the mic play real speech (convert a demo mp3 with ffmpeg); it loops.
 - Phone share button exists only where `navigator.canShare` exists: add the init script `navigator.canShare = () => true; navigator.share = async () => {}` to test the real phone layout (this is how the sideways-overflow bug was found).
-- Always check `document.documentElement.scrollWidth === clientWidth` on phones (no sideways scroll).
+- Always check `document.documentElement.scrollWidth <= clientWidth` on phones (no sideways scroll). Not `===`: the root has `scrollbar-gutter: stable`, so with a classic scrollbar (headless Chromium, Windows, Linux) `scrollWidth` is smaller by the gutter.
 - Real models can be tested in headless Chromium (network is allowed): Whisper loads in ~20 s; transcribe `public/demos/en/bill.mp3` and compare with the line in `lib/demos.ts`.
 
 ## Gotchas (learned the hard way)

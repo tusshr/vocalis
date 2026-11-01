@@ -20,6 +20,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `npm run preview` sends the same isolation headers as production (`serve.json`).
 
 ### Fixed
+- The page no longer shifts sideways when it starts to scroll: the scrollbar's space is always reserved (`scrollbar-gutter: stable`), so short and long pages line up.
+- On About, Contact, Privacy, Terms and 404 the tool switch showed an empty track with nothing selected; there it is now two plain links.
 - The main button on the 404 page was blank in dark mode (article link color overrode the button's text color).
 - About, Contact, Privacy, Terms and 404 now use the same header as the tools (logo, tool switch, language on the same grid), so nothing jumps when you move between pages. The install button lives only in the footer, as in the design rules.
 - Switching from Voice to text back to Text to voice: the sliding pill no longer covers the "Text to voice" label mid-slide (labels now stay above the pill during the transition).
