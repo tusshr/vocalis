@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-01
+
 ### Added
 - Text to voice keeps generating while you move to another page of the site (pages change without a reload). A progress pill sits in the header on every page while a job runs. Long jobs (over ~10 s) also show a floating card with the time left and an optional "Notify me" (asks for permission only when tapped; closing the card keeps it closed for that job). When the audio is ready on another page, a card offers Play, which turns it into a WhatsApp-style voice note player (pause, seek on the waveform, 1× / 1.5× / 2× at normal pitch) that keeps playing while you browse. In a background tab the tab title changes and, if asked, a system notification appears; a take finished in a background tab never starts playing by itself. Leaving the site while a job runs asks first. The voice model stays loaded when you come back to the tool. All texts in 5 languages.
 - Delete a single take from its ⋮ menu.
@@ -12,7 +14,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The phone screen stays on while a model loads, a voice is recorded, a script is spoken or audio is transcribed (Screen Wake Lock API; browsers without it behave as before).
 
 ### Changed
-- Code: one server-rendered header for every page (tools included); tools report their activity to the live logo through a small store and put Start again into the header through a slot. Hooks moved to a root `hooks/` folder; duplicate `useMediaQuery` copies removed; unused imports now fail the type check (`noUnusedLocals`).
+- Code: one server-rendered header for every page (tools included); tools report their activity to the live logo through a small store, and the text to voice session (engine, voice, takes) lives in a store that outlives the page. Hooks moved to a root `hooks/` folder; duplicate `useMediaQuery` copies removed; unused imports now fail the type check (`noUnusedLocals`).
+- "Start again" moved from the header to the "Your generations" heading.
 - Text to voice on desktop: your generations now live in the right pane (like transcripts in voice to text) instead of under the tool; the voices open from the voice chip as a popover. Phones are unchanged (voice drawer, generations under the tool).
 - Both tools show a designed empty state in the side pane: skeleton cards shaped like a take or a transcript, a title and one line of help (5 languages).
 - The logo is alive: its bars breathe at rest, bounce while working and follow the sound while audio plays or the mic records. Still in the footer and for reduced motion.
@@ -23,7 +26,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - `npm run preview` sends the same isolation headers as production (`serve.json`).
 
 ### Fixed
-- "Start again" moved from the header to the "Your generations" heading.
 - Leaving text to voice while it was generating logged "The voice engine was reset." as an error; shutting the engine down on purpose now ends the step as stopped.
 - Contact, Privacy and Terms showed addresses that could not receive mail (`hello@` / `legal@` the site's host); they now show vocalis@zerouploads.com.
 - The page no longer shifts sideways when it starts to scroll: the scrollbar's space is always reserved (`scrollbar-gutter: stable`), so short and long pages line up.
