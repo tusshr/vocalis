@@ -8,38 +8,37 @@ import { ScrollFade } from './scroll-fade'
 import { TOOL_NAMES } from '@/content/tools'
 import { Waveform, type WaveMode } from '@/components/waveform'
 import { ScriptEditor } from '@/components/script-editor'
-import { attachMic, decodeToMono24k, detachMic, encodeWav, formatTime, player, SAMPLE_RATE } from '@/lib/audio-stage'
+import { attachMic, decodeToMono24k, detachMic, encodeWav, player, SAMPLE_RATE } from '@/lib/audio-stage'
 import { applyGain, concat, fadeEdges, limitPeak, prepareVoiceSample, silence, timeStretch } from '@/lib/audio-fx'
 import { DEMO_LINES, demoUrl } from '@/lib/demos'
 import { MOOD_EMOJI, MOODS, parseScript, SPEED_FACTOR, splitSentences, VOLUME_GAIN, type Mood } from '@/lib/script'
-import { canRecord, createEngine, isLowPowerDevice, isSupported, StoppedError, type LoadProgress, type TTSEngine } from '@/lib/tts-engine'
-import { ENGINE_LANGUAGE, fmt, isLocale, timeAgo, type Locale } from '@/lib/i18n'
+import { canRecord, isLowPowerDevice, isSupported, StoppedError } from '@/lib/tts-engine'
+import { jobs } from '@/lib/jobs'
+import { session, setBase, setBusy, setConsent, setGenError, setLoadProgress, setModel, setModelError, setMoods, setStopped, setTakes, studio, type Clip, type Piece, type Take } from '@/lib/tts-studio'
+import { ENGINE_LANGUAGE, fmt, formatTime, isLocale, timeAgo, type Locale } from '@/lib/i18n'
 import { UI_STRINGS } from '@/content/ui'
 import { PRESETS, type Preset } from '@/lib/voices'
 import { usePublishActivity } from '@/hooks/use-activity'
 import { useDismiss } from '@/hooks/use-dismiss'
 import { usePlayback, type Playback } from '@/hooks/use-playback'
+import { useTtsStudio } from '@/hooks/use-tts-studio'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import { useWakeLock } from '@/hooks/use-wake-lock'
 import type { UI } from '@/content/ui'
 import { SpeechLanguageSelect } from '@/components/speech-language-select'
 import { EmptyPane } from '@/components/empty-pane'
 import { HeaderActions } from '@/components/header-actions'
+import { JobNote } from '@/components/job-note'
 
 const Sheet = dynamic(() => import('./sheet'), { ssr: false })
 const MIN_SECONDS = 5
 const MAX_SECONDS = 20 // recording cap; only the clearest 10 s is used for cloning
 const SCRIPT_LIMIT = 700
 const SEGMENT_GAP = 0.12
+const LONG_JOB_SECONDS = 10 // longer jobs say you can leave the page and offer a notification
 
 
-type Clip = { audio: Float32Array; source: 'preset' | 'mic' | 'file'; preset?: Preset }
 type Target = 'base' | Mood
-type Busy = { label: string; progress?: number } | null
-/** A sentence of the take and where it is in the audio, in seconds. The read-along uses these. */
-/** `words` are character ranges of the piece's words in the script the take was made from. */
-type Piece = { text: string; start: number; end: number; words?: [number, number][] }
-type Take = { id: string; text: string; script?: string; audio: Float32Array; pieces: Piece[]; voice?: string; at?: number }
 
 /** ONNX Runtime throws bare numbers (WASM pointers) on internal failures, which mean nothing to people. */
 function friendlyError(error: unknown, ui: UI) {
@@ -54,17 +53,13 @@ const presetLabel = (preset: Preset, ui: UI) => `${preset.name}, ${ui.styles[pre
 export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
   const [env, setEnv] = useState({ supported: true, recordable: true, lowPower: false })
 
-  const [base, setBase] = useState<Clip | null>(null)
-  const [moods, setMoods] = useState<Partial<Record<Mood, Clip>>>({})
+  // Voice, model, job and takes live in the studio store, so they survive moving to another page and back.
+  const { base, moods, consent, model, loadProgress, modelError, busy, genError, stopped, takes } = useTtsStudio()
   const [openMood, setOpenMood] = useState<Mood | null>(null)
-  const [consent, setConsent] = useState(false)
   const [voiceError, setVoiceError] = useState<string | null>(null)
   const [decoding, setDecoding] = useState<Target | null>(null)
   const [recording, setRecording] = useState<{ target: Target; elapsed: number } | null>(null)
 
-  const [model, setModel] = useState<'idle' | 'loading' | 'ready' | 'failed'>('idle')
-  const [loadProgress, setLoadProgress] = useState<LoadProgress | null>(null)
-  const [modelError, setModelError] = useState<string | null>(null)
 
   // The language the voice speaks. It starts as the page language, and people can change it (the choice is kept per page language).
   const [speechLang, setSpeechLang] = useState<Locale>(lang)
@@ -89,11 +84,6 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
       if (speechLang === lang) localStorage.removeItem(speechKey); else localStorage.setItem(speechKey, speechLang)
     } catch {}
   }, [hydrated, script, scriptKey, speechLang, speechKey, lang])
-  const [busy, setBusy] = useState<Busy>(null)
-  const [genError, setGenError] = useState<string | null>(null)
-  const [stopped, setStopped] = useState(false)
-  const [takes, setTakes] = useState<Take[]>([])
-  const [pendingGenerate, setPendingGenerate] = useState(false)
   // Voice panel: sample voices in one tab, your own voice (and its moods) in the other. On phones it is a drawer.
   const [voiceTab, setVoiceTab] = useState<'voices' | 'mine'>('voices')
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -121,14 +111,9 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
     voicePopoverRef.current?.focus({ preventScroll: true })
   }, [isPhone, sheetOpen])
 
-  const engineRef = useRef<TTSEngine | null>(null)
   const cancelledRef = useRef(false)
   const demoCacheRef = useRef(new Map<string, Take | null>())
-  const modelLangRef = useRef<Locale | null>(null) // language the engine has (or is loading); null when idle or failed
-  const loadTokenRef = useRef(0) // a newer load makes an older one's result stale
-  const encodedRef = useRef(new Map<string, Float32Array>()) // voice name -> audio it was cloned from
   const recorderRef = useRef<MediaRecorder | null>(null)
-  const stopRequestedRef = useRef(false)
   const fileTargetRef = useRef<Target>('base')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -136,7 +121,9 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
 
   useEffect(() => {
     setEnv({ supported: isSupported(), recordable: canRecord(), lowPower: isLowPowerDevice() })
-    return () => { engineRef.current?.terminate(); player.stop(); recorderRef.current?.stop() }
+    session.toolMounted = true
+    // The engine stays: a generation keeps running on other pages, and the model is ready when the visitor comes back.
+    return () => { session.toolMounted = false; player.stop(); recorderRef.current?.stop() }
   }, [])
 
   const usesOwnAudio = (!!base && base.source !== 'preset') || Object.values(moods).some((clip) => clip && clip.source !== 'preset')
@@ -316,34 +303,37 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
   }
 
   /* ---------------- model ---------------- */
-  const getEngine = () => (engineRef.current ??= createEngine())
-
-  /** Load the model for a language. A different language replaces the engine, because each language has its own model. */
-  const loadModel = async (language: Locale = speechLang) => {
-    if (modelLangRef.current === language) return
-    if (modelLangRef.current) {
-      engineRef.current?.terminate()
-      engineRef.current = null
-      encodedRef.current.clear()
+  /** Load the model for a language (or wait for the load already running). A different language replaces the engine, because each language has its own model. */
+  const loadModel = (language: Locale = speechLang): Promise<void> => {
+    if (session.modelLang === language && session.loading) return session.loading
+    if (session.modelLang) {
+      session.engine?.terminate()
+      session.engine = null
+      session.encoded.clear()
     }
-    modelLangRef.current = language
-    const token = ++loadTokenRef.current
+    session.modelLang = language
+    session.loading = runLoad(language)
+    return session.loading
+  }
+  const runLoad = async (language: Locale) => {
+    const token = ++session.loadToken
     setModel('loading')
     setModelError(null)
     setLoadProgress(null)
     try {
-      await getEngine().loadModel((progress) => { if (token === loadTokenRef.current) setLoadProgress(progress) }, ENGINE_LANGUAGE[language])
-      if (token !== loadTokenRef.current) return
+      await session.getEngine().loadModel((progress) => { if (token === session.loadToken) setLoadProgress(progress) }, ENGINE_LANGUAGE[language])
+      if (token !== session.loadToken) return
       setModel('ready')
       // Installed apps ask the browser to keep the ~140 MB model (browsers can clear caches under storage pressure).
       if (matchMedia('(display-mode: standalone)').matches) void navigator.storage?.persist?.()
     } catch (error) {
-      if (token !== loadTokenRef.current || error instanceof StoppedError) return
+      if (token !== session.loadToken || error instanceof StoppedError) return
       console.error('[vocalis] load', error)
-      engineRef.current?.terminate()
-      engineRef.current = null
-      encodedRef.current.clear()
-      modelLangRef.current = null
+      session.engine?.terminate()
+      session.engine = null
+      session.encoded.clear()
+      session.modelLang = null
+      session.loading = null
       setModelError(error instanceof Error ? error.message : 'unknown error')
       setModel('failed')
     }
@@ -357,7 +347,7 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
     setGenError(null)
     if (playback.playingId?.startsWith('preset-')) player.stop()
     // Load the new language only if a model is already in use, so changing the menu alone does not start a download.
-    if (modelLangRef.current) void loadModel(next)
+    if (session.modelLang) void loadModel(next)
   }
 
   /* ---------------- generate ---------------- */
@@ -369,29 +359,22 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
 
   const canGenerate = !busy && !voiceBlocked && !consentMissing && parsed.spokenLength > 0
 
-  /** Generate now if the model is ready; otherwise load it and generate when it is. */
-  const onGenerate = () => {
+  /** Load the model if needed, then generate. Runs to the end even if the visitor moves to another page meanwhile. */
+  const onGenerate = async () => {
     if (!canGenerate) return
-    if (model === 'ready') { void generate(); return }
-    setPendingGenerate(true)
-    void loadModel()
+    if (studio.get().model !== 'ready') await loadModel()
+    if (studio.get().model === 'ready') await generate()
   }
-  useEffect(() => {
-    if (!pendingGenerate) return
-    if (model === 'ready') { setPendingGenerate(false); void generate() }
-    else if (model === 'failed') setPendingGenerate(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingGenerate, model])
 
   const generate = async () => {
-    if (model !== 'ready' || busy || voiceBlocked || consentMissing) return
+    if (studio.get().busy) return
     const segments = parsed.segments
     if (!segments.some((segment) => segment.kind === 'speech')) return
-    stopRequestedRef.current = false
+    session.stopRequested = false
     setStopped(false)
     setGenError(null)
     player.stop()
-    const engine = getEngine()
+    const engine = session.getEngine()
     const voiceFor = (mood: Mood | null) => (mood && moods[mood] ? mood : 'base')
 
     try {
@@ -407,11 +390,11 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
       const needed = new Set(segments.flatMap((segment) => (segment.kind === 'speech' ? [voiceFor(segment.mood)] : [])))
       for (const name of needed) {
         const clip = name === 'base' ? baseClip : moods[name as Mood]!
-        if (encodedRef.current.get(name) === clip.audio) continue
+        if (session.encoded.get(name) === clip.audio) continue
         setBusy({ label: name === 'base' ? ui.learning : fmt(ui.learningMood, { mood: ui.moods[name as Mood].toLowerCase() }) })
         await engine.createVoice(prepareVoiceSample(clip.audio), name)
-        encodedRef.current.set(name, clip.audio)
-        if (stopRequestedRef.current) throw new StoppedError()
+        session.encoded.set(name, clip.audio)
+        if (session.stopRequested) throw new StoppedError()
       }
 
       // 2. Speak each sentence, shape it (speed, volume), and stitch the parts with pauses. Keep each sentence's time for the read-along.
@@ -421,15 +404,21 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
       const pieces: Piece[] = []
       let cursor = 0
       let spoken = 0
+      let speakingSince = 0
+      let long = false // once the job looks long, the note stays until it ends (no jumping)
       const add = (audio: Float32Array) => { parts.push(audio); cursor += seconds(audio) }
       for (let i = 0; i < plan.length; i++) {
         const { segment, sentences } = plan[i]
         if (segment.kind === 'pause') { add(silence(segment.seconds)); continue }
         for (let j = 0; j < sentences.length; j++) {
           spoken += 1
-          setBusy({ label: sentenceCount > 1 ? fmt(ui.speakingPart, { n: spoken, total: sentenceCount }) : ui.speaking, progress: (spoken - 1) / sentenceCount })
+          if (spoken === 1) speakingSince = performance.now()
+          // Time left, from the pace of the sentences already spoken (unknown before the first one is done).
+          const secondsLeft = spoken > 1 ? Math.round(((performance.now() - speakingSince) / 1000 / (spoken - 1)) * (sentenceCount - spoken + 1)) : undefined
+          long ||= (secondsLeft ?? 0) > LONG_JOB_SECONDS
+          setBusy({ label: sentenceCount > 1 ? fmt(ui.speakingPart, { n: spoken, total: sentenceCount }) : ui.speaking, progress: (spoken - 1) / sentenceCount, secondsLeft, long })
           let audio = await engine.generate(sentences[j], voiceFor(segment.mood))
-          if (stopRequestedRef.current) throw new StoppedError()
+          if (session.stopRequested) throw new StoppedError()
           audio = timeStretch(audio, SPEED_FACTOR[segment.speed])
           audio = fadeEdges(applyGain(audio, VOLUME_GAIN[segment.volume]))
           pieces.push({ text: sentences[j], start: cursor, end: cursor + seconds(audio) })
@@ -453,7 +442,9 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
       const take: Take = { id: crypto.randomUUID(), text: script.trim(), script, audio: limitPeak(concat(parts)), pieces, voice: clipTitle(baseClip), at: Date.now() }
       setTakes((current) => [take, ...current].slice(0, 10))
       setBusy(null)
-      player.play(take.id, take.audio)
+      jobs.finish({ kind: 'tts', id: take.id, excerpt: take.text, seconds: seconds(take.audio) })
+      // Plays by itself only while the tool is on screen; elsewhere the toast offers Play.
+      if (session.toolMounted) player.play(take.id, take.audio)
     } catch (error) {
       setBusy(null)
       if (error instanceof StoppedError) { setStopped(true); return }
@@ -463,8 +454,8 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
   }
 
   const stopGenerating = () => {
-    stopRequestedRef.current = true
-    engineRef.current?.stop()
+    session.stopRequested = true
+    session.engine?.stop()
   }
 
   const startOver = () => {
@@ -496,7 +487,7 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
 
   const ownClip = base && base.source !== 'preset' ? base : null
   const selectedPreset = base?.preset?.id ?? (base ? undefined : PRESETS[0].id)
-  const modelLabel = pendingGenerate || model === 'loading' ? modelProgress : undefined
+  const modelLabel = model === 'loading' ? modelProgress : undefined
   const voiceSummary = base ? clipTitle(base) : presetLabel(PRESETS[0], ui)
 
   const moodCount = MOODS.filter((mood) => moods[mood]).length
@@ -642,10 +633,11 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
             {genError && <p className="note is-error" role="alert">{fmt(ui.genFailed, { error: genError })}</p>}
             {consentMissing && <p className="note is-warn">{ui.consentNeeded}</p>}
             {stopped && !busy && <p className="note">{ui.stopped}</p>}
+            {busy?.long && <JobNote lang={lang} secondsLeft={busy.secondsLeft} />}
           </div>
 
           <div className="pane-body">
-            <ScriptEditor ui={ui} value={script} onChange={setScript} disabled={!!busy} maxLength={SCRIPT_LIMIT} onSubmit={onGenerate}
+            <ScriptEditor ui={ui} value={script} onChange={setScript} disabled={!!busy} maxLength={SCRIPT_LIMIT} onSubmit={() => void onGenerate()}
               moodsWithClips={MOODS.filter((mood) => moods[mood])} onFocus={warmUp} highlight={spokenWord}
               onReset={script !== speechUi.defaultScript ? () => setScript(speechUi.defaultScript) : undefined} />
             {speechLang !== lang && <p className="note">{ui.langNote}</p>}
@@ -692,7 +684,7 @@ export function VoiceTool({ ui, lang }: { ui: UI; lang: Locale }) {
                   title={loading ? modelLabel!.label : busy ? busy.label : undefined}
                   aria-label={loading ? modelLabel!.label : undefined}
                   disabled={state === 'idle' ? !canGenerate : state === 'loading'}
-                  onClick={state === 'busy' ? stopGenerating : state === 'failed' ? () => void loadModel() : onGenerate}>
+                  onClick={state === 'busy' ? stopGenerating : state === 'failed' ? () => void loadModel() : () => void onGenerate()}>
                   {state === 'busy' ? <Square size={14} /> : state === 'failed' ? <RotateCcw size={14} /> : null}
                   <span className="action-label">{label}</span>
                   {state === 'idle' && <kbd className="kbd" aria-hidden>⌘↵</kbd>}

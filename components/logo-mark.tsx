@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useActivity } from '@/hooks/use-activity'
+import { useJobs } from '@/hooks/use-jobs'
 
 /**
  * The Vocalis mark: four bars on the gradient tile. At rest they breathe (CSS); while the tool works they bounce (CSS);
@@ -9,7 +10,10 @@ import { useActivity } from '@/hooks/use-activity'
  */
 export function LogoMark({ still = false }: { still?: boolean }) {
   const ref = useRef<HTMLSpanElement>(null)
-  const mode = useActivity()
+  const activity = useActivity()
+  const { running } = useJobs()
+  // On a page without the tool, a background job still shows as work.
+  const mode = activity === 'idle' && running ? 'working' : activity
   const live = mode === 'live' && !still
 
   useEffect(() => {

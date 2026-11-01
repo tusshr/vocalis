@@ -1,6 +1,7 @@
 import type { Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@/components/analytics'
+import { JobNotifier } from '@/components/job-notifier'
 import { Analytics as VercelAnalytics } from '@vercel/analytics/next'
 import { CHROME } from '@/content/pages'
 import type { Locale } from '@/lib/i18n'
@@ -24,6 +25,7 @@ export function RootDocument({ lang, children }: { lang: Locale; children: React
     <html lang={lang} className={body.variable}>
       <body>
         {children}
+        <JobNotifier lang={lang} />
         {/* Service worker (install and offline start), and keep the install prompt for the install button. */}
         <script dangerouslySetInnerHTML={{ __html: [
           "if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('/sw.js')});",

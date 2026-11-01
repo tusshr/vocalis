@@ -38,3 +38,7 @@ export function timeAgo(ms: number, locale: Locale, justNow: string) {
 export function fmt(template: string, values: Record<string, string | number>) {
   return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? ''))
 }
+
+/** 75 → "1:15" (audio lengths and timers). */
+export const formatTime = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`

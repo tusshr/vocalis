@@ -192,6 +192,3 @@ export function encodeWav(samples: Float32Array, sampleRate = SAMPLE_RATE) {
   for (let i = 0; i < samples.length; i++) view.setInt16(44 + i * 2, Math.max(-1, Math.min(1, samples[i])) * 0x7fff, true)
   return new Blob([buffer], { type: 'audio/wav' })
 }
-
-export const formatTime = (seconds: number) =>
-  `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`

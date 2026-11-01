@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ViewTransition } from 'react'
+import { JobPill } from '@/components/job-pill'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { LogoMark } from '@/components/logo-mark'
 import { ToolSwitch } from '@/components/tool-switch'
@@ -20,6 +21,7 @@ export function SiteHeader({ lang, page, active }: { lang: Locale; page?: string
         <Link className="wordmark" href={localePath(lang)}><LogoMark />{SITE_NAME}</Link>
         <ToolSwitch lang={lang} active={active} variant="header" />
         <div className="topbar-actions">
+          <JobPill lang={lang} />
           <div id={HEADER_ACTIONS_ID} className="header-actions" />
           <LanguageSwitcher lang={lang} page={page} label={CHROME[lang].language} />
         </div>

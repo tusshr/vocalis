@@ -3,7 +3,7 @@
 // Everything else (pages, the voice worker, icons): network first, cached copy only when offline.
 // The voice model has its own cache (pocket-tts-models-v1). This file does not touch it.
 // Change CACHE when this file changes, so old copies are deleted.
-const CACHE = 'vocalis-v2'
+const CACHE = 'vocalis-v3'
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.add('/')))
@@ -31,4 +31,16 @@ self.addEventListener('fetch', (event) => {
   }
   event.respondWith(fetch(request).then(save).catch(() =>
     caches.match(request).then((hit) => hit || (request.mode === 'navigate' ? caches.match('/') : Response.error()))))
+})
+
+// "Your audio is ready": focus the open tab and let the page go to the tool without a reload (the take lives in memory), or open it.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = event.notification.data && event.notification.data.url
+  if (!url) return
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windows) => {
+    const open = windows.find((client) => new URL(client.url).origin === self.location.origin)
+    if (open) return open.focus().then((client) => client.postMessage({ type: 'open', url }))
+    return self.clients.openWindow(url)
+  }))
 })
